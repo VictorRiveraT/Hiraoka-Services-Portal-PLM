@@ -1,0 +1,74 @@
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: hiraoka_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - hiraoka_network
+    # ⚠️ Sin "ports" → no es accesible desde fuera de Docker
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: hiraoka_auth
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=30m
+    depends_on:
+      - postgres
+    networks:
+      - hiraoka_network
+    # ⚠️ Sin "ports" → solo accesible dentro de la red Docker
+    #    Nginx → api-gateway → auth-service (nadie entra directo)
+
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: hiraoka_gateway
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    depends_on:
+      - auth-service
+    networks:
+      - hiraoka_network
+    # ⚠️ Sin "ports" → solo Nginx puede hablarle
+
+  # ── NGINX: único punto de entrada al sistema ──────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: hiraoka_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"    # HTTP  → redirige a HTTPS
+      - "443:443"  # HTTPS → único puerto público
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - hiraoka_network
+
+volumes:
+  postgres_data:
+
+networks:
+  hiraoka_network:
+    driver: bridge

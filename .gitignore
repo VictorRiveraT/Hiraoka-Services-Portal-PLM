@@ -1,0 +1,19 @@
+# Variables de entorno (NUNCA subir a GitHub)
+.env
+.env.*
+
+# Dependencias
+node_modules/
+
+# Certificados SSL (son locales)
+nginx/certs/
+
+# Logs
+*.log
+
+# Dist
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
