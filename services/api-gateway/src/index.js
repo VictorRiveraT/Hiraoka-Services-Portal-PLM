@@ -39,6 +39,18 @@ app.use('/api/auth', createProxyMiddleware({
   },
 }));
 
+// ── Proxy → Ticket Service ────────────────────────────────────
+app.use('/api/tickets', createProxyMiddleware({
+  target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error('[GATEWAY] Error al conectar con ticket-service:', err.message);
+      res.status(503).json({ error: 'Servicio de tickets no disponible.' });
+    },
+  },
+}));
+
 // ── Ruta no encontrada ────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada en el gateway.' });
