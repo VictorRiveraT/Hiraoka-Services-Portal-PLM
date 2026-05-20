@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hiraoka Services — Consulta tu servicio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS DE DISEÑO (Vanesa - Identidad Corporativa) ── */
+    :root {
+      --rojo-primario:  #CC0000;
+      --rojo-hover:     #AA0000;
+      --rojo-claro:     #FFEBEE;
+      --texto:          #212121;
+      --superficie:     #F5F5F5;
+      --borde:          #E0E0E0;
+      --deshabilitado:  #9E9E9E;
+      --exito:          #1B5E20;
+      --advertencia:    #E65100;
+      --error:          #B71C1C;
+      --fondo:          #FFFFFF;
+      --alerta-suave:   #FFF8E1;
+
+      --radio-sm:   4px;
+      --radio-md:   8px;
+      --radio-lg:   12px;
+
+      --xs:  0.25rem;
+      --sm:  0.5rem;
+      --md:  1rem;
+      --lg:  1.5rem;
+      --xl:  2rem;
+      --xxl: 3rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      font-size: 13px;
+      color: var(--texto);
+      background: var(--superficie);
+      min-height: 100vh;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      background: var(--rojo-primario);
+      padding: var(--md) var(--lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .navbar-brand {
+      text-align: center;
+      color: white;
+    }
+
+    .navbar-brand .logo {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .navbar-brand .tagline {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      opacity: 0.85;
+      font-weight: 400;
+    }
+
+    /* ── LAYOUT PRINCIPAL ── */
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--lg) var(--md);
+    }
+
+    /* ── SECCIÓN HERO ── */
+    .hero {
+      text-align: center;
+      padding: var(--xl) 0 var(--lg);
+    }
+
+    .hero h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin-bottom: var(--sm);
+    }
+
+    .hero p {
+      font-size: 0.9rem;
+      color: var(--deshabilitado);
+      line-height: 1.5;
+    }
+
+    /* ── CARD FORMULARIO ── */
+    .card {
+      background: var(--fondo);
+      border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      padding: var(--xl);
+      margin-bottom: var(--lg);
+    }
+
+    .form-group {
+      margin-bottom: var(--lg);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--texto);
+      margin-bottom: var(--xs);
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 var(--md);
+      border: 1.5px solid var(--borde);
+      border-radius: var(--radio-sm);
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.9rem;
+      color: var(--texto);
+      background: var(--fondo);
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    .form-input::placeholder { color: var(--deshabilitado); }
+
+    .form-input:focus {
+      border-color: var(--rojo-primario);
+      box-shadow: 0 0 0 3px rgba(204,0,0,0.08);
+    }
+
+    .form-input.error { border-color: var(--error); }
+
+    .form-error {
+      font-size: 0.72rem;
+      color: var(--error);
+      margin-top: 4px;
+      display: none;
+    }
+
+    .form-error.visible { display: block; }
+
+    .btn-primary {
+      width: 100%;
+      height: 44px;
+      background: var(--rojo-primario);
+      color: white;
+      border: none;
+      border-radius: var(--radio-sm);
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover  { background: var(--rojo-hover); }
+    .btn-primary:active { transform: scale(0.98); }
+
+    .btn-primary:disabled {
+      background: var(--deshabilitado);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── SPINNER ── */
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULTADO ── */
+    .resultado-label {
+      font-size: 0.7rem;
+      color: var(--deshabilitado);
+      text-align: center;
+      letter-spacing: 0.1em;
+      margin-bottom: var(--md);
+    }
+
+    .ticket-card {
+      background: var(--fondo);
+      border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      overflow: hidden;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .ticket-card.visible { display: block; }
+
+    .ticket-header {
+      background: var(--rojo-primario);
+      padding: var(--md) var(--lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ticket-id {
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .badge-estado {
+      background: rgba(255,255,255,0.22);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .ticket-body { padding: var(--lg); }
+
+    .ticket-equipo-label {
+      font-size: 0.7rem;
+      color: var(--deshabilitado);
+      margin-bottom: 2px;
+      letter-spacing: 0.05em;
+    }
+
+    .ticket-equipo-nombre {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--texto);
+      margin-bottom: var(--lg);
+    }
+
+    /* ── BARRA DE PROGRESO DE ESTADOS ── */
+    .progress-track {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: var(--lg);
+    }
+
+    .progress-line {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      height: 2px;
+      background: var(--borde);
+      z-index: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--rojo-primario);
+      transition: width 0.5s ease;
+    }
+
+    .progress-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 1;
+      flex: 1;
+    }
+
+    .step-dot {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--borde);
+      border: 2px solid var(--borde);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: white;
+      transition: all 0.3s;
+    }
+
+    .step-dot.done    { background: var(--rojo-primario); border-color: var(--rojo-primario); }
+    .step-dot.active  {
+      background: var(--rojo-primario);
+      border-color: var(--rojo-primario);
+      box-shadow: 0 0 0 3px rgba(204,0,0,0.2);
+    }
+
+    .step-label {
+      font-size: 0.6rem;
+      color: var(--deshabilitado);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .step-label.active { color: var(--rojo-primario); font-weight: 700; }
+
+    /* ── ALERTA FECHA ── */
+    .alerta-fecha {
+      background: var(--alerta-suave);
+      border-radius: var(--radio-sm);
+      padding: var(--md);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--advertencia);
+      font-weight: 500;
+      margin-bottom: var(--lg);
+    }
+
+    /* ── BTN SECUNDARIO ── */
+    .btn-secondary {
+      width: 100%;
+      height: 44px;
+      background: transparent;
+      color: var(--rojo-primario);
+      border: 1.5px solid var(--rojo-primario);
+      border-radius: var(--radio-sm);
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-secondary:hover { background: var(--rojo-claro); }
+
+    /* ── LISTA DE TICKETS (múltiples) ── */
+    .tickets-list { display: none; }
+    .tickets-list.visible { display: block; }
+
+    .ticket-item {
+      background: var(--fondo);
+      border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: var(--md) var(--lg);
+      margin-bottom: var(--md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+      animation: slideUp 0.3s ease;
+    }
+
+    .ticket-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+
+    .ticket-item-info .id   { font-weight: 700; font-size: 0.85rem; color: var(--texto); }
+    .ticket-item-info .prod { font-size: 0.75rem; color: var(--deshabilitado); margin-top: 2px; }
+
+    .badge-mini {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .badge-Recibido      { background: #E8F5E9; color: #1B5E20; }
+    .badge-Diagnosticando{ background: #FFF3E0; color: #E65100; }
+    .badge-Reparando     { background: #FFEBEE; color: #B71C1C; }
+    .badge-Listo         { background: #E3F2FD; color: #0D47A1; }
+    .badge-Entregado     { background: #F3E5F5; color: #4A148C; }
+
+    /* ── ERROR CARD ── */
+    .error-card {
+      background: var(--fondo);
+      border-radius: var(--radio-md);
+      padding: var(--xl);
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    .error-card.visible { display: block; }
+    .error-card .icon   { font-size: 2.5rem; margin-bottom: var(--md); }
+    .error-card h3      { font-size: 1rem; font-weight: 700; color: var(--texto); margin-bottom: var(--sm); }
+    .error-card p       { font-size: 0.8rem; color: var(--deshabilitado); line-height: 1.5; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--fondo);
+      border-top: 1px solid var(--borde);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--sm) 0;
+      font-size: 0.65rem;
+      color: var(--deshabilitado);
+      cursor: pointer;
+      transition: color 0.15s;
+      gap: 3px;
+      min-height: 48px;
+      justify-content: center;
+    }
+
+    .nav-item.active { color: var(--rojo-primario); }
+    .nav-item svg    { width: 20px; height: 20px; }
+
+    .content-wrap { padding-bottom: 72px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo">hiraoka</div>
+      <div class="tagline">SERVICES</div>
+    </div>
+  </nav>
+
+  <div class="content-wrap">
+    <div class="container">
+
+      <!-- HERO -->
+      <div class="hero">
+        <h1>Consulta tu servicio</h1>
+        <p>Ingresa tus datos para ver el estado<br>de tu equipo en tiempo real</p>
+      </div>
+
+      <!-- FORMULARIO -->
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label" for="dni">Número de DNI</label>
+          <input class="form-input" id="dni" type="text"
+                 placeholder="Ej: 72345678" maxlength="8" inputmode="numeric" />
+          <span class="form-error" id="dni-error">El DNI debe tener exactamente 8 dígitos.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ticket">Número de ticket <span style="color:var(--deshabilitado);font-weight:400">(opcional)</span></label>
+          <input class="form-input" id="ticket" type="text" placeholder="Ej: TK-20261023" />
+        </div>
+
+        <button class="btn-primary" id="btn-consultar" onclick="consultar()">
+          <span id="btn-text">Consultar estado</span>
+          <div class="spinner" id="spinner"></div>
+        </button>
+      </div>
+
+      <!-- RESULTADO LABEL -->
+      <p class="resultado-label" id="resultado-label" style="display:none">resultado</p>
+
+      <!-- TICKET ÚNICO -->
+      <div class="ticket-card" id="ticket-card">
+        <div class="ticket-header">
+          <span class="ticket-id" id="res-id">Ticket #TK-20261023</span>
+          <span class="badge-estado" id="res-estado">En reparación</span>
+        </div>
+        <div class="ticket-body">
+          <div class="ticket-equipo-label">Equipo</div>
+          <div class="ticket-equipo-nombre" id="res-equipo">Samsung Galaxy S24 Ultra</div>
+
+          <!-- Barra de progreso -->
+          <div class="progress-track" id="progress-track">
+            <div class="progress-line">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-step">
+              <div class="step-dot" id="dot-0">✓</div>
+              <div class="step-label" id="lbl-0">Recibido</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-dot" id="dot-1">✓</div>
+              <div class="step-label" id="lbl-1">Diagnóstico</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-dot" id="dot-2">3</div>
+              <div class="step-label" id="lbl-2">Reparación</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-dot" id="dot-3">4</div>
+              <div class="step-label" id="lbl-3">Listo</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-dot" id="dot-4">5</div>
+              <div class="step-label" id="lbl-4">Entrega</div>
+            </div>
+          </div>
+
+          <div class="alerta-fecha" id="res-fecha">
+            Fecha estimada de entrega: 18 oct 2026
+          </div>
+
+          <button class="btn-secondary">Ver detalle técnico →</button>
+        </div>
+      </div>
+
+      <!-- LISTA DE TICKETS (búsqueda solo por DNI) -->
+      <div class="tickets-list" id="tickets-list"></div>
+
+      <!-- ERROR -->
+      <div class="error-card" id="error-card">
+        <div class="icon">🔍</div>
+        <h3 id="error-title">No encontramos tu ticket</h3>
+        <p id="error-msg">Verifica los datos ingresados e intenta de nuevo.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+      </svg>
+      Consulta
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+      Notificaciones
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+      </svg>
+      Encuestas
+    </div>
+  </nav>
+
+  <script>
+    // ── ESTADOS Y SU ÍNDICE ──────────────────────────────────────
+    const ESTADOS = ['Recibido','Diagnosticando','Reparando','Listo','Entregado'];
+    const ESTADO_LABELS = ['Recibido','Diagnóstico','Reparación','Listo','Entrega'];
+    const ESTADO_BADGES = {
+      'Recibido':      'Recibido',
+      'Diagnosticando':'En diagnóstico',
+      'Reparando':     'En reparación',
+      'Listo':         'Listo para retiro',
+      'Entregado':     'Entregado',
+    };
+
+    // ── HELPERS ─────────────────────────────────────────────────
+    function setLoading(on) {
+      const btn = document.getElementById('btn-consultar');
+      const txt = document.getElementById('btn-text');
+      const spin = document.getElementById('spinner');
+      btn.disabled = on;
+      txt.style.display = on ? 'none' : 'block';
+      spin.style.display = on ? 'block' : 'none';
+    }
+
+    function limpiarResultados() {
+      document.getElementById('ticket-card').classList.remove('visible');
+      document.getElementById('tickets-list').classList.remove('visible');
+      document.getElementById('error-card').classList.remove('visible');
+      document.getElementById('resultado-label').style.display = 'none';
+      document.getElementById('tickets-list').innerHTML = '';
+    }
+
+    function mostrarError(titulo, msg) {
+      document.getElementById('resultado-label').style.display = 'block';
+      document.getElementById('error-title').textContent = titulo;
+      document.getElementById('error-msg').textContent = msg;
+      document.getElementById('error-card').classList.add('visible');
+    }
+
+    function actualizarProgreso(estado) {
+      const idx = ESTADOS.indexOf(estado);
+      const fill = Math.max(0, (idx / (ESTADOS.length - 1)) * 100);
+      document.getElementById('progress-fill').style.width = fill + '%';
+
+      for (let i = 0; i < 5; i++) {
+        const dot = document.getElementById('dot-' + i);
+        const lbl = document.getElementById('lbl-' + i);
+        dot.className = 'step-dot';
+        lbl.className = 'step-label';
+        lbl.textContent = ESTADO_LABELS[i];
+        if (i < idx)       { dot.classList.add('done'); dot.textContent = '✓'; }
+        else if (i === idx) { dot.classList.add('active'); dot.textContent = i + 1; lbl.classList.add('active'); }
+        else                { dot.textContent = i + 1; }
+      }
+    }
+
+    function mostrarTicket(t) {
+      document.getElementById('resultado-label').style.display = 'block';
+      document.getElementById('res-id').textContent    = 'Ticket #' + (t.id_ticket || '').toString().substring(0,8).toUpperCase();
+      document.getElementById('res-estado').textContent = ESTADO_BADGES[t.estado] || t.estado;
+      document.getElementById('res-equipo').textContent = t.producto || 'Equipo registrado';
+
+      const fecha = t.fecha_estimada_entrega
+        ? new Date(t.fecha_estimada_entrega).toLocaleDateString('es-PE', { day:'numeric', month:'short', year:'numeric' })
+        : 'Por confirmar';
+      document.getElementById('res-fecha').textContent = 'Fecha estimada de entrega: ' + fecha;
+
+      actualizarProgreso(t.estado);
+      document.getElementById('ticket-card').classList.add('visible');
+    }
+
+    function mostrarLista(tickets) {
+      document.getElementById('resultado-label').style.display = 'block';
+      const lista = document.getElementById('tickets-list');
+      lista.innerHTML = tickets.map(t => `
+        <div class="ticket-item">
+          <div class="ticket-item-info">
+            <div class="id">Ticket #${(t.id_ticket||'').toString().substring(0,8).toUpperCase()}</div>
+            <div class="prod">${t.producto || 'Equipo registrado'}</div>
+          </div>
+          <span class="badge-mini badge-${t.estado}">${ESTADO_BADGES[t.estado]||t.estado}</span>
+        </div>
+      `).join('');
+      lista.classList.add('visible');
+    }
+
+    // ── CONSULTA PRINCIPAL ──────────────────────────────────────
+    async function consultar() {
+      const dni    = document.getElementById('dni').value.trim();
+      const ticket = document.getElementById('ticket').value.trim();
+      const dniInput = document.getElementById('dni');
+      const dniError = document.getElementById('dni-error');
+
+      // Validación DNI
+      dniInput.classList.remove('error');
+      dniError.classList.remove('visible');
+
+      if (!/^\d{8}$/.test(dni)) {
+        dniInput.classList.add('error');
+        dniError.classList.add('visible');
+        dniInput.focus();
+        return;
+      }
+
+      limpiarResultados();
+      setLoading(true);
+
+      try {
+        let data;
+
+        if (ticket) {
+          // Buscar ticket específico por ID
+          const res = await fetch(`/api/tickets/${encodeURIComponent(ticket)}`);
+          data = await res.json();
+
+          if (!res.ok || !data.success) {
+            mostrarError('No encontramos tu ticket', 'Verifica el número de ticket e intenta de nuevo.');
+          } else {
+            mostrarTicket(data.data);
+          }
+        } else {
+          // Buscar todos los tickets del DNI
+          const res = await fetch(`/api/tickets/dni/${encodeURIComponent(dni)}`);
+          data = await res.json();
+
+          if (!res.ok || !data.success) {
+            mostrarError('Error al consultar', 'Hubo un problema al procesar tu solicitud. Intenta más tarde.');
+          } else if (data.total === 0) {
+            mostrarError('No encontramos tickets', 'No hay tickets asociados a tu DNI. Si dejaste un equipo, consulta con el técnico.');
+          } else if (data.total === 1) {
+            mostrarTicket(data.data[0]);
+          } else {
+            mostrarLista(data.data);
+          }
+        }
+      } catch (err) {
+        mostrarError('Sin conexión', 'No se pudo conectar con el servidor. Verifica tu conexión e intenta de nuevo.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Enter para consultar
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') consultar();
+    });
+
+    // Solo números en DNI
+    document.getElementById('dni').addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '').slice(0, 8);
+    });
+  </script>
+</body>
+</html>
