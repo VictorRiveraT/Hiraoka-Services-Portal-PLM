@@ -8,12 +8,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Seguridad ─────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 
 // ── Rate limiting global (protección ante sobrecargas) ────────
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 200,                  // máx 200 requests por IP
+  windowMs: 15 * 60 * 1000,
+  max: 200,
   message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
 });
 app.use(globalLimiter);
@@ -40,15 +42,24 @@ app.use('/api/auth', createProxyMiddleware({
 }));
 
 // ── Proxy → Ticket Service ────────────────────────────────────
-app.use('/api/tickets', createProxyMiddleware({
+app.use('/api/tickets', (req, res, next) => {
+  req.url = '/tickets' + req.url;
+  createProxyMiddleware({
+    target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con ticket-service:', err.message);
+        res.status(503).json({ error: 'Servicio de tickets no disponible.' });
+      },
+    },
+  })(req, res, next);
+});
+
+// ── Frontend público → Ticket Service ────────────────────────
+app.use('/', createProxyMiddleware({
   target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
   changeOrigin: true,
-  on: {
-    error: (err, req, res) => {
-      console.error('[GATEWAY] Error al conectar con ticket-service:', err.message);
-      res.status(503).json({ error: 'Servicio de tickets no disponible.' });
-    },
-  },
 }));
 
 // ── Ruta no encontrada ────────────────────────────────────────

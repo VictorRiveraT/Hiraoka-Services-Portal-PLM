@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
-    /* ── TOKENS DE DISEÑO (Vanesa - Identidad Corporativa) ── */
+    /* ── TOKENS DE DISEÑO (Vanesa - Guía de Estados HSPP-24) ── */
     :root {
       --rojo-primario:  #CC0000;
       --rojo-hover:     #AA0000;
@@ -17,7 +17,6 @@
       --superficie:     #F5F5F5;
       --borde:          #E0E0E0;
       --deshabilitado:  #9E9E9E;
-      --exito:          #1B5E20;
       --advertencia:    #E65100;
       --error:          #B71C1C;
       --fondo:          #FFFFFF;
@@ -33,6 +32,27 @@
       --lg:  1.5rem;
       --xl:  2rem;
       --xxl: 3rem;
+
+      /* Estados — HSPP-24 Guía de estados visuales */
+      --estado-recibido-bg:       #F1F8E9;
+      --estado-recibido-txt:      #558B2F;
+      --estado-recibido-borde:    #DCEDC8;
+
+      --estado-diagnostico-bg:    #FFF3E0;
+      --estado-diagnostico-txt:   #E65100;
+      --estado-diagnostico-borde: #FFE082;
+
+      --estado-reparacion-bg:     #FFEBEE;
+      --estado-reparacion-txt:    #CC0000;
+      --estado-reparacion-borde:  #FFCDD2;
+
+      --estado-listo-bg:          #E3F2FD;
+      --estado-listo-txt:         #0D47A1;
+      --estado-listo-borde:       #BBDEFB;
+
+      --estado-entregado-bg:      #F3E5F5;
+      --estado-entregado-txt:     #4A148C;
+      --estado-entregado-borde:   #CE93D8;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,53 +77,24 @@
       z-index: 100;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
+    .navbar-brand { text-align: center; color: white; }
+    .navbar-brand .logo    { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+    .navbar-brand .tagline { font-size: 0.65rem; letter-spacing: 0.2em; opacity: 0.85; font-weight: 400; }
 
-    .navbar-brand {
-      text-align: center;
-      color: white;
-    }
+    /* ── LAYOUT ── */
+    .container      { max-width: 480px; margin: 0 auto; padding: var(--lg) var(--md); }
+    .content-wrap   { padding-bottom: 72px; }
 
-    .navbar-brand .logo {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      line-height: 1;
-    }
+    /* ── VISTAS ── */
+    .view { display: none; }
+    .view.active { display: block; }
 
-    .navbar-brand .tagline {
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
-      opacity: 0.85;
-      font-weight: 400;
-    }
+    /* ── HERO ── */
+    .hero { text-align: center; padding: var(--xl) 0 var(--lg); }
+    .hero h1 { font-size: 1.5rem; font-weight: 700; color: var(--texto); margin-bottom: var(--sm); }
+    .hero p  { font-size: 0.9rem; color: var(--deshabilitado); line-height: 1.5; }
 
-    /* ── LAYOUT PRINCIPAL ── */
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: var(--lg) var(--md);
-    }
-
-    /* ── SECCIÓN HERO ── */
-    .hero {
-      text-align: center;
-      padding: var(--xl) 0 var(--lg);
-    }
-
-    .hero h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--texto);
-      margin-bottom: var(--sm);
-    }
-
-    .hero p {
-      font-size: 0.9rem;
-      color: var(--deshabilitado);
-      line-height: 1.5;
-    }
-
-    /* ── CARD FORMULARIO ── */
+    /* ── CARD ── */
     .card {
       background: var(--fondo);
       border-radius: var(--radio-md);
@@ -112,292 +103,184 @@
       margin-bottom: var(--lg);
     }
 
-    .form-group {
-      margin-bottom: var(--lg);
+    /* ── FORMULARIO ── */
+    .form-group  { margin-bottom: var(--lg); }
+    .form-label  { display: block; font-size: 0.75rem; font-weight: 500; color: var(--texto); margin-bottom: var(--xs); }
+    .form-input  {
+      width: 100%; height: 44px; padding: 0 var(--md);
+      border: 1.5px solid var(--borde); border-radius: var(--radio-sm);
+      font-family: 'Roboto', sans-serif; font-size: 0.9rem; color: var(--texto);
+      background: var(--fondo); transition: border-color 0.15s; outline: none;
     }
-
-    .form-label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--texto);
-      margin-bottom: var(--xs);
-    }
-
-    .form-input {
-      width: 100%;
-      height: 44px;
-      padding: 0 var(--md);
-      border: 1.5px solid var(--borde);
-      border-radius: var(--radio-sm);
-      font-family: 'Roboto', sans-serif;
-      font-size: 0.9rem;
-      color: var(--texto);
-      background: var(--fondo);
-      transition: border-color 0.15s;
-      outline: none;
-    }
-
     .form-input::placeholder { color: var(--deshabilitado); }
+    .form-input:focus  { border-color: var(--rojo-primario); box-shadow: 0 0 0 3px rgba(204,0,0,0.08); }
+    .form-input.error  { border-color: var(--error); }
+    .form-error        { font-size: 0.72rem; color: var(--error); margin-top: 4px; display: none; }
+    .form-error.visible{ display: block; }
 
-    .form-input:focus {
-      border-color: var(--rojo-primario);
-      box-shadow: 0 0 0 3px rgba(204,0,0,0.08);
-    }
-
-    .form-input.error { border-color: var(--error); }
-
-    .form-error {
-      font-size: 0.72rem;
-      color: var(--error);
-      margin-top: 4px;
-      display: none;
-    }
-
-    .form-error.visible { display: block; }
-
+    /* ── BOTONES ── */
     .btn-primary {
-      width: 100%;
-      height: 44px;
-      background: var(--rojo-primario);
-      color: white;
-      border: none;
-      border-radius: var(--radio-sm);
-      font-family: 'Roboto', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      letter-spacing: 0.01em;
+      width: 100%; height: 44px;
+      background: var(--rojo-primario); color: white; border: none;
+      border-radius: var(--radio-sm); font-family: 'Roboto', sans-serif;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s, transform 0.1s; letter-spacing: 0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
+    .btn-primary:hover   { background: var(--rojo-hover); }
+    .btn-primary:active  { transform: scale(0.98); }
+    .btn-primary:disabled{ background: var(--deshabilitado); cursor: not-allowed; transform: none; }
 
-    .btn-primary:hover  { background: var(--rojo-hover); }
-    .btn-primary:active { transform: scale(0.98); }
+    .btn-secondary {
+      width: 100%; height: 44px; background: transparent;
+      color: var(--rojo-primario); border: 1.5px solid var(--rojo-primario);
+      border-radius: var(--radio-sm); font-family: 'Roboto', sans-serif;
+      font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: var(--rojo-claro); }
 
-    .btn-primary:disabled {
-      background: var(--deshabilitado);
-      cursor: not-allowed;
-      transform: none;
+    .btn-link {
+      background: none; border: none; color: var(--rojo-primario);
+      font-size: 0.85rem; cursor: pointer; padding: 0; text-decoration: underline;
+      font-family: 'Roboto', sans-serif;
     }
 
     /* ── SPINNER ── */
     .spinner {
-      display: none;
-      width: 20px; height: 20px;
+      width: 18px; height: 18px;
       border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin: 0 auto;
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: none;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── RESULTADO ── */
+    /* ── BADGE DE ESTADO (HSPP-24) ── */
+    .badge {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 4px 10px; border-radius: var(--radio-sm);
+      border: 1px solid; white-space: nowrap;
+      min-height: 44px; min-width: 44px;   /* touch target WCAG */
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .badge-Recibido       { background: var(--estado-recibido-bg);    color: var(--estado-recibido-txt);    border-color: var(--estado-recibido-borde); }
+    .badge-Diagnosticando { background: var(--estado-diagnostico-bg); color: var(--estado-diagnostico-txt); border-color: var(--estado-diagnostico-borde); }
+    .badge-Reparando      { background: var(--estado-reparacion-bg);  color: var(--estado-reparacion-txt);  border-color: var(--estado-reparacion-borde); }
+    .badge-Listo          { background: var(--estado-listo-bg);       color: var(--estado-listo-txt);       border-color: var(--estado-listo-borde); }
+    .badge-Entregado      { background: var(--estado-entregado-bg);   color: var(--estado-entregado-txt);   border-color: var(--estado-entregado-borde); }
+
+    /* Badge pequeño para lista */
+    .badge-sm { min-height: unset; min-width: unset; font-size: 0.65rem; padding: 3px 8px; }
+
+    /* ── RESULTADO — LABEL ── */
     .resultado-label {
-      font-size: 0.7rem;
-      color: var(--deshabilitado);
-      text-align: center;
-      letter-spacing: 0.1em;
-      margin-bottom: var(--md);
-    }
-
-    .ticket-card {
-      background: var(--fondo);
-      border-radius: var(--radio-md);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
-      overflow: hidden;
+      font-size: 0.7rem; color: var(--deshabilitado);
+      text-align: center; letter-spacing: 0.1em; margin-bottom: var(--md);
       display: none;
-      animation: slideUp 0.3s ease;
     }
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .ticket-card.visible { display: block; }
-
-    .ticket-header {
-      background: var(--rojo-primario);
-      padding: var(--md) var(--lg);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .ticket-id {
-      color: white;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .badge-estado {
-      background: rgba(255,255,255,0.22);
-      color: white;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      letter-spacing: 0.02em;
-    }
-
-    .ticket-body { padding: var(--lg); }
-
-    .ticket-equipo-label {
-      font-size: 0.7rem;
-      color: var(--deshabilitado);
-      margin-bottom: 2px;
-      letter-spacing: 0.05em;
-    }
-
-    .ticket-equipo-nombre {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--texto);
-      margin-bottom: var(--lg);
-    }
-
-    /* ── BARRA DE PROGRESO DE ESTADOS ── */
-    .progress-track {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      position: relative;
-      margin-bottom: var(--lg);
-    }
-
-    .progress-line {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      height: 2px;
-      background: var(--borde);
-      z-index: 0;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--rojo-primario);
-      transition: width 0.5s ease;
-    }
-
-    .progress-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      z-index: 1;
-      flex: 1;
-    }
-
-    .step-dot {
-      width: 20px; height: 20px;
-      border-radius: 50%;
-      background: var(--borde);
-      border: 2px solid var(--borde);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.6rem;
-      font-weight: 700;
-      color: white;
-      transition: all 0.3s;
-    }
-
-    .step-dot.done    { background: var(--rojo-primario); border-color: var(--rojo-primario); }
-    .step-dot.active  {
-      background: var(--rojo-primario);
-      border-color: var(--rojo-primario);
-      box-shadow: 0 0 0 3px rgba(204,0,0,0.2);
-    }
-
-    .step-label {
-      font-size: 0.6rem;
-      color: var(--deshabilitado);
-      text-align: center;
-      line-height: 1.2;
-    }
-
-    .step-label.active { color: var(--rojo-primario); font-weight: 700; }
-
-    /* ── ALERTA FECHA ── */
-    .alerta-fecha {
-      background: var(--alerta-suave);
-      border-radius: var(--radio-sm);
-      padding: var(--md);
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--advertencia);
-      font-weight: 500;
-      margin-bottom: var(--lg);
-    }
-
-    /* ── BTN SECUNDARIO ── */
-    .btn-secondary {
-      width: 100%;
-      height: 44px;
-      background: transparent;
-      color: var(--rojo-primario);
-      border: 1.5px solid var(--rojo-primario);
-      border-radius: var(--radio-sm);
-      font-family: 'Roboto', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .btn-secondary:hover { background: var(--rojo-claro); }
-
-    /* ── LISTA DE TICKETS (múltiples) ── */
+    /* ── LISTA DE TICKETS ── */
     .tickets-list { display: none; }
     .tickets-list.visible { display: block; }
 
     .ticket-item {
-      background: var(--fondo);
-      border-radius: var(--radio-md);
+      background: var(--fondo); border-radius: var(--radio-md);
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      padding: var(--md) var(--lg);
-      margin-bottom: var(--md);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: box-shadow 0.15s;
-      animation: slideUp 0.3s ease;
+      padding: var(--md) var(--lg); margin-bottom: var(--md);
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; transition: box-shadow 0.15s;
+      animation: slideUp 0.25s ease;
+      min-height: 64px;
     }
-
-    .ticket-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
-
+    .ticket-item:hover  { box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
     .ticket-item-info .id   { font-weight: 700; font-size: 0.85rem; color: var(--texto); }
     .ticket-item-info .prod { font-size: 0.75rem; color: var(--deshabilitado); margin-top: 2px; }
 
-    .badge-mini {
-      font-size: 0.65rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
+    /* ── VISTA DETALLE DE TICKET (HSPP-23) ── */
+    .ticket-detail { display: none; animation: slideUp 0.3s ease; }
+    .ticket-detail.visible { display: block; }
 
-    .badge-Recibido      { background: #E8F5E9; color: #1B5E20; }
-    .badge-Diagnosticando{ background: #FFF3E0; color: #E65100; }
-    .badge-Reparando     { background: #FFEBEE; color: #B71C1C; }
-    .badge-Listo         { background: #E3F2FD; color: #0D47A1; }
-    .badge-Entregado     { background: #F3E5F5; color: #4A148C; }
+    .detail-back {
+      display: flex; align-items: center; gap: var(--sm);
+      margin-bottom: var(--md); cursor: pointer; color: var(--rojo-primario);
+      font-size: 0.85rem; font-weight: 500;
+    }
+    .detail-back svg { width: 18px; height: 18px; }
+
+    .detail-header {
+      background: var(--fondo); border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      padding: var(--lg); margin-bottom: var(--md);
+    }
+    .detail-ticket-num { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .detail-equipo     { font-size: 0.85rem; color: var(--deshabilitado); margin-bottom: var(--md); }
+    .detail-serie      { font-size: 0.75rem; color: var(--deshabilitado); }
+
+    .alerta-fecha {
+      background: var(--alerta-suave); border-radius: var(--radio-sm);
+      padding: var(--md); font-size: 0.8rem; color: var(--advertencia);
+      font-weight: 500; margin-top: var(--md); display: flex; align-items: center; gap: var(--sm);
+    }
+    .alerta-fecha svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── TIMELINE DE ESTADOS (HSPP-23 detalle) ── */
+    .timeline-section {
+      background: var(--fondo); border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      padding: var(--lg); margin-bottom: var(--md);
+    }
+    .timeline-title { font-size: 0.85rem; font-weight: 700; margin-bottom: var(--lg); }
+
+    .timeline { position: relative; padding-left: 32px; }
+
+    .tl-step { position: relative; padding-bottom: var(--lg); }
+    .tl-step:last-child { padding-bottom: 0; }
+
+    .tl-step::before {
+      content: '';
+      position: absolute; left: -23px; top: 22px; bottom: -4px;
+      width: 2px; background: var(--borde);
+    }
+    .tl-step:last-child::before { display: none; }
+
+    .tl-dot {
+      position: absolute; left: -30px; top: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--borde); border: 2px solid var(--borde);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tl-dot.done   { background: var(--rojo-primario); border-color: var(--rojo-primario); }
+    .tl-dot.active { background: var(--rojo-primario); border-color: var(--rojo-primario); box-shadow: 0 0 0 4px rgba(204,0,0,0.15); }
+    .tl-dot svg    { width: 8px; height: 8px; color: white; }
+
+    .tl-nombre  { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+    .tl-desc    { font-size: 0.78rem; color: var(--deshabilitado); line-height: 1.5; }
+    .tl-nombre.pendiente { color: var(--deshabilitado); font-weight: 400; }
+
+    .tl-step.active-step .tl-nombre { color: var(--rojo-primario); }
+    .tl-step.active-step .tl-desc   { color: var(--texto); }
+
+    /* ── META-DATOS DEL TICKET ── */
+    .meta-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: var(--md); margin-top: var(--md);
+    }
+    .meta-item label { font-size: 0.68rem; color: var(--deshabilitado); display: block; margin-bottom: 2px; }
+    .meta-item span  { font-size: 0.82rem; font-weight: 500; }
+
+    .problema-box {
+      background: var(--superficie); border-radius: var(--radio-sm);
+      padding: var(--md); margin-top: var(--md);
+      font-size: 0.8rem; line-height: 1.6; color: var(--texto);
+    }
+    .problema-label { font-size: 0.68rem; color: var(--deshabilitado); margin-bottom: 4px; }
 
     /* ── ERROR CARD ── */
     .error-card {
-      background: var(--fondo);
-      border-radius: var(--radio-md);
-      padding: var(--xl);
-      text-align: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      display: none;
+      background: var(--fondo); border-radius: var(--radio-md);
+      padding: var(--xl); text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: none;
       animation: slideUp 0.3s ease;
     }
-
     .error-card.visible { display: block; }
     .error-card .icon   { font-size: 2.5rem; margin-bottom: var(--md); }
     .error-card h3      { font-size: 1rem; font-weight: 700; color: var(--texto); margin-bottom: var(--sm); }
@@ -405,33 +288,24 @@
 
     /* ── BOTTOM NAV ── */
     .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--fondo);
-      border-top: 1px solid var(--borde);
-      display: flex;
-      padding-bottom: env(safe-area-inset-bottom);
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--fondo); border-top: 1px solid var(--borde);
+      display: flex; padding-bottom: env(safe-area-inset-bottom);
     }
-
     .nav-item {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: var(--sm) 0;
-      font-size: 0.65rem;
-      color: var(--deshabilitado);
-      cursor: pointer;
-      transition: color 0.15s;
-      gap: 3px;
-      min-height: 48px;
-      justify-content: center;
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: var(--sm) 0; font-size: 0.65rem; color: var(--deshabilitado);
+      cursor: pointer; transition: color 0.15s; gap: 3px;
+      min-height: 48px; justify-content: center;
     }
-
     .nav-item.active { color: var(--rojo-primario); }
     .nav-item svg    { width: 20px; height: 20px; }
 
-    .content-wrap { padding-bottom: 72px; }
+    /* ── ANIMACIÓN ── */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -447,89 +321,116 @@
   <div class="content-wrap">
     <div class="container">
 
-      <!-- HERO -->
-      <div class="hero">
-        <h1>Consulta tu servicio</h1>
-        <p>Ingresa tus datos para ver el estado<br>de tu equipo en tiempo real</p>
-      </div>
+      <!-- ══════════════════════════════════════════════════════
+           VISTA 1: BÚSQUEDA (por defecto)
+      ══════════════════════════════════════════════════════ -->
+      <div class="view active" id="view-busqueda">
 
-      <!-- FORMULARIO -->
-      <div class="card">
-        <div class="form-group">
-          <label class="form-label" for="dni">Número de DNI</label>
-          <input class="form-input" id="dni" type="text"
-                 placeholder="Ej: 72345678" maxlength="8" inputmode="numeric" />
-          <span class="form-error" id="dni-error">El DNI debe tener exactamente 8 dígitos.</span>
+        <!-- HERO -->
+        <div class="hero">
+          <h1>Consulta tu servicio</h1>
+          <p>Ingresa tus datos para ver el estado<br>de tu equipo en tiempo real</p>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="ticket">Número de ticket <span style="color:var(--deshabilitado);font-weight:400">(opcional)</span></label>
-          <input class="form-input" id="ticket" type="text" placeholder="Ej: TK-20261023" />
+        <!-- FORMULARIO -->
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label" for="inp-dni">Número de DNI</label>
+            <input class="form-input" id="inp-dni" type="text"
+                   placeholder="Ej: 72345678" maxlength="8" inputmode="numeric"
+                   autocomplete="off" />
+            <span class="form-error" id="err-dni">El DNI debe tener exactamente 8 dígitos.</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="inp-ticket">
+              Número de ticket
+              <span style="color:var(--deshabilitado);font-weight:400">(opcional — para resultado exacto)</span>
+            </label>
+            <input class="form-input" id="inp-ticket" type="text"
+                   placeholder="Ej: d1000000-0000-0000-0000-000000000001"
+                   autocomplete="off" />
+            <span class="form-error" id="err-ticket">El número de ticket no tiene un formato válido.</span>
+          </div>
         </div>
 
         <button class="btn-primary" id="btn-consultar" onclick="consultar()">
           <span id="btn-text">Consultar estado</span>
           <div class="spinner" id="spinner"></div>
         </button>
-      </div>
 
-      <!-- RESULTADO LABEL -->
-      <p class="resultado-label" id="resultado-label" style="display:none">resultado</p>
+        <!-- RESULTADO LABEL -->
+        <p class="resultado-label" id="resultado-label" style="margin-top:var(--lg)">resultados</p>
 
-      <!-- TICKET ÚNICO -->
-      <div class="ticket-card" id="ticket-card">
-        <div class="ticket-header">
-          <span class="ticket-id" id="res-id">Ticket #TK-20261023</span>
-          <span class="badge-estado" id="res-estado">En reparación</span>
+        <!-- LISTA DE TICKETS (búsqueda solo por DNI con múltiples resultados) -->
+        <div class="tickets-list" id="tickets-list"></div>
+
+        <!-- ERROR -->
+        <div class="error-card" id="error-card">
+          <div class="icon">🔍</div>
+          <h3 id="error-title">No encontramos tu ticket</h3>
+          <p id="error-msg">Verifica los datos ingresados e intenta de nuevo.</p>
         </div>
-        <div class="ticket-body">
-          <div class="ticket-equipo-label">Equipo</div>
-          <div class="ticket-equipo-nombre" id="res-equipo">Samsung Galaxy S24 Ultra</div>
 
-          <!-- Barra de progreso -->
-          <div class="progress-track" id="progress-track">
-            <div class="progress-line">
-              <div class="progress-fill" id="progress-fill"></div>
+      </div><!-- /view-busqueda -->
+
+
+      <!-- ══════════════════════════════════════════════════════
+           VISTA 2: DETALLE DE TICKET (HSPP-23)
+      ══════════════════════════════════════════════════════ -->
+      <div class="view" id="view-detalle">
+
+        <!-- Back -->
+        <div class="detail-back" onclick="volverBusqueda()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Volver a la consulta
+        </div>
+
+        <!-- Header del ticket -->
+        <div class="detail-header">
+          <div class="detail-ticket-num" id="det-id">Ticket #</div>
+          <div class="detail-equipo" id="det-equipo">Cargando...</div>
+          <div id="det-badge-wrap"></div>
+
+          <div class="alerta-fecha" id="det-fecha" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            </svg>
+            <span id="det-fecha-txt"></span>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <label>Cliente</label>
+              <span id="det-cliente">—</span>
             </div>
-            <div class="progress-step">
-              <div class="step-dot" id="dot-0">✓</div>
-              <div class="step-label" id="lbl-0">Recibido</div>
+            <div class="meta-item">
+              <label>Fecha de ingreso</label>
+              <span id="det-ingreso">—</span>
             </div>
-            <div class="progress-step">
-              <div class="step-dot" id="dot-1">✓</div>
-              <div class="step-label" id="lbl-1">Diagnóstico</div>
-            </div>
-            <div class="progress-step">
-              <div class="step-dot" id="dot-2">3</div>
-              <div class="step-label" id="lbl-2">Reparación</div>
-            </div>
-            <div class="progress-step">
-              <div class="step-dot" id="dot-3">4</div>
-              <div class="step-label" id="lbl-3">Listo</div>
-            </div>
-            <div class="progress-step">
-              <div class="step-dot" id="dot-4">5</div>
-              <div class="step-label" id="lbl-4">Entrega</div>
+            <div class="meta-item" style="grid-column:1/-1">
+              <label>Serie del equipo</label>
+              <span id="det-serie">—</span>
             </div>
           </div>
 
-          <div class="alerta-fecha" id="res-fecha">
-            Fecha estimada de entrega: 18 oct 2026
+          <div class="problema-box">
+            <div class="problema-label">Motivo de ingreso</div>
+            <div id="det-problema">—</div>
           </div>
-
-          <button class="btn-secondary">Ver detalle técnico →</button>
         </div>
-      </div>
 
-      <!-- LISTA DE TICKETS (búsqueda solo por DNI) -->
-      <div class="tickets-list" id="tickets-list"></div>
+        <!-- Timeline de estados (HSPP-23) -->
+        <div class="timeline-section">
+          <div class="timeline-title">Evolución y Estado de su Reparación</div>
+          <div class="timeline" id="timeline"></div>
+        </div>
 
-      <!-- ERROR -->
-      <div class="error-card" id="error-card">
-        <div class="icon">🔍</div>
-        <h3 id="error-title">No encontramos tu ticket</h3>
-        <p id="error-msg">Verifica los datos ingresados e intenta de nuevo.</p>
-      </div>
+        <button class="btn-secondary" onclick="volverBusqueda()">← Nueva consulta</button>
+
+      </div><!-- /view-detalle -->
 
     </div>
   </div>
@@ -547,40 +448,53 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
       </svg>
-      Notificaciones
+      Alertas
     </div>
     <div class="nav-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
-      Encuestas
+      Ayuda
     </div>
   </nav>
 
   <script>
-    // ── ESTADOS Y SU ÍNDICE ──────────────────────────────────────
-    const ESTADOS = ['Recibido','Diagnosticando','Reparando','Listo','Entregado'];
-    const ESTADO_LABELS = ['Recibido','Diagnóstico','Reparación','Listo','Entrega'];
-    const ESTADO_BADGES = {
-      'Recibido':      'Recibido',
-      'Diagnosticando':'En diagnóstico',
-      'Reparando':     'En reparación',
-      'Listo':         'Listo para retiro',
-      'Entregado':     'Entregado',
+    // ── CONSTANTES DE ESTADO (HSPP-24 guía visual) ──────────────
+    const ESTADOS = ['Recibido', 'Diagnosticando', 'Reparando', 'Listo', 'Entregado'];
+
+    const ESTADO_INFO = {
+      Recibido:       { label: 'Recibido',            desc: 'Su equipo fue registrado en tienda. El estado físico inicial fue documentado por nuestro equipo.' },
+      Diagnosticando: { label: 'Revisión Técnica',     desc: 'Un técnico especializado está evaluando su equipo para identificar la causa del problema.' },
+      Reparando:      { label: 'Reparación en Proceso',desc: 'Estamos realizando la reparación con repuestos autorizados. Le avisaremos cuando esté listo.' },
+      Listo:          { label: 'Listo para Retiro',    desc: 'Su equipo está reparado y listo para ser recogido en tienda. Traiga su DNI y este número de ticket.' },
+      Entregado:      { label: 'Equipo Entregado',     desc: 'Su equipo fue entregado exitosamente. Gracias por confiar en Hiraoka Services.' },
     };
+
+    const ESTADO_LABELS = {
+      Recibido:       'Recibido',
+      Diagnosticando: 'En diagnóstico',
+      Reparando:      'En reparación',
+      Listo:          'Listo para retiro',
+      Entregado:      'Entregado',
+    };
+
+    // UUID regex simple
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const DNI_RE  = /^\d{8}$/;
+
+    let dniBusqueda = '';  // guardamos el DNI para el POST /consulta
 
     // ── HELPERS ─────────────────────────────────────────────────
     function setLoading(on) {
-      const btn = document.getElementById('btn-consultar');
-      const txt = document.getElementById('btn-text');
+      const btn  = document.getElementById('btn-consultar');
+      const txt  = document.getElementById('btn-text');
       const spin = document.getElementById('spinner');
-      btn.disabled = on;
-      txt.style.display = on ? 'none' : 'block';
+      btn.disabled       = on;
+      txt.style.display  = on ? 'none' : 'block';
       spin.style.display = on ? 'block' : 'none';
     }
 
     function limpiarResultados() {
-      document.getElementById('ticket-card').classList.remove('visible');
       document.getElementById('tickets-list').classList.remove('visible');
       document.getElementById('error-card').classList.remove('visible');
       document.getElementById('resultado-label').style.display = 'none';
@@ -590,122 +504,234 @@
     function mostrarError(titulo, msg) {
       document.getElementById('resultado-label').style.display = 'block';
       document.getElementById('error-title').textContent = titulo;
-      document.getElementById('error-msg').textContent = msg;
+      document.getElementById('error-msg').textContent   = msg;
       document.getElementById('error-card').classList.add('visible');
     }
 
-    function actualizarProgreso(estado) {
-      const idx = ESTADOS.indexOf(estado);
-      const fill = Math.max(0, (idx / (ESTADOS.length - 1)) * 100);
-      document.getElementById('progress-fill').style.width = fill + '%';
+    function fmtFecha(iso) {
+      if (!iso) return 'Por confirmar';
+      return new Date(iso).toLocaleDateString('es-PE', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+    }
 
-      for (let i = 0; i < 5; i++) {
-        const dot = document.getElementById('dot-' + i);
-        const lbl = document.getElementById('lbl-' + i);
-        dot.className = 'step-dot';
-        lbl.className = 'step-label';
-        lbl.textContent = ESTADO_LABELS[i];
-        if (i < idx)       { dot.classList.add('done'); dot.textContent = '✓'; }
-        else if (i === idx) { dot.classList.add('active'); dot.textContent = i + 1; lbl.classList.add('active'); }
-        else                { dot.textContent = i + 1; }
+    function buildBadge(estado, small = false) {
+      const div = document.createElement('span');
+      div.className = `badge badge-${estado}${small ? ' badge-sm' : ''}`;
+      div.textContent = ESTADO_LABELS[estado] || estado;
+      return div;
+    }
+
+    // ── VISTAS ──────────────────────────────────────────────────
+    function mostrarVista(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+
+    function volverBusqueda() {
+      mostrarVista('view-busqueda');
+    }
+
+    // ── DETALLE DE TICKET (HSPP-23) ──────────────────────────────
+    function mostrarDetalle(t) {
+      // Header
+      const shortId = t.id_ticket ? t.id_ticket.toString().substring(0, 8).toUpperCase() : '—';
+      document.getElementById('det-id').textContent      = `Ticket #${shortId}`;
+      document.getElementById('det-equipo').textContent  = `${t.producto || 'Equipo'} ${t.marca ? '· ' + t.marca : ''} ${t.modelo ? t.modelo : ''}`.trim();
+      document.getElementById('det-cliente').textContent = t.cliente || '—';
+      document.getElementById('det-ingreso').textContent = fmtFecha(t.fecha_ingreso);
+      document.getElementById('det-serie').textContent   = t.numero_serie || '—';
+      document.getElementById('det-problema').textContent= t.descripcion_problema || '—';
+
+      // Badge de estado
+      const badgeWrap = document.getElementById('det-badge-wrap');
+      badgeWrap.innerHTML = '';
+      badgeWrap.appendChild(buildBadge(t.estado));
+
+      // Fecha estimada
+      const fechaBox = document.getElementById('det-fecha');
+      if (t.fecha_estimada_entrega && t.estado !== 'Entregado') {
+        document.getElementById('det-fecha-txt').textContent =
+          `Fecha estimada de entrega: ${fmtFecha(t.fecha_estimada_entrega)}`;
+        fechaBox.style.display = 'flex';
+      } else {
+        fechaBox.style.display = 'none';
       }
+
+      // Timeline (HSPP-23)
+      const idxActual = ESTADOS.indexOf(t.estado);
+      const timeline  = document.getElementById('timeline');
+      timeline.innerHTML = '';
+
+      ESTADOS.forEach((estado, i) => {
+        const info = ESTADO_INFO[estado];
+        const done   = i < idxActual;
+        const active = i === idxActual;
+        const pend   = i > idxActual;
+
+        const step = document.createElement('div');
+        step.className = `tl-step${active ? ' active-step' : ''}`;
+
+        const dot = document.createElement('div');
+        dot.className = `tl-dot${done ? ' done' : active ? ' active' : ''}`;
+        if (done || active) {
+          dot.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+        }
+
+        const nombre = document.createElement('div');
+        nombre.className = `tl-nombre${pend ? ' pendiente' : ''}`;
+        nombre.textContent = info.label;
+
+        const desc = document.createElement('div');
+        desc.className = 'tl-desc';
+        desc.textContent = (done || active) ? info.desc : '';
+
+        step.appendChild(dot);
+        step.appendChild(nombre);
+        if (!pend) step.appendChild(desc);
+        timeline.appendChild(step);
+      });
+
+      mostrarVista('view-detalle');
     }
 
-    function mostrarTicket(t) {
-      document.getElementById('resultado-label').style.display = 'block';
-      document.getElementById('res-id').textContent    = 'Ticket #' + (t.id_ticket || '').toString().substring(0,8).toUpperCase();
-      document.getElementById('res-estado').textContent = ESTADO_BADGES[t.estado] || t.estado;
-      document.getElementById('res-equipo').textContent = t.producto || 'Equipo registrado';
-
-      const fecha = t.fecha_estimada_entrega
-        ? new Date(t.fecha_estimada_entrega).toLocaleDateString('es-PE', { day:'numeric', month:'short', year:'numeric' })
-        : 'Por confirmar';
-      document.getElementById('res-fecha').textContent = 'Fecha estimada de entrega: ' + fecha;
-
-      actualizarProgreso(t.estado);
-      document.getElementById('ticket-card').classList.add('visible');
-    }
-
+    // ── LISTA DE TICKETS (múltiples) ─────────────────────────────
     function mostrarLista(tickets) {
       document.getElementById('resultado-label').style.display = 'block';
       const lista = document.getElementById('tickets-list');
-      lista.innerHTML = tickets.map(t => `
-        <div class="ticket-item">
+
+      lista.innerHTML = `<p style="font-size:0.8rem;color:var(--deshabilitado);margin-bottom:var(--md)">
+        Encontramos ${tickets.length} ticket(s) asociados a tu DNI. Toca uno para ver el detalle.
+      </p>`;
+
+      tickets.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'ticket-item';
+        item.innerHTML = `
           <div class="ticket-item-info">
             <div class="id">Ticket #${(t.id_ticket||'').toString().substring(0,8).toUpperCase()}</div>
             <div class="prod">${t.producto || 'Equipo registrado'}</div>
           </div>
-          <span class="badge-mini badge-${t.estado}">${ESTADO_BADGES[t.estado]||t.estado}</span>
-        </div>
-      `).join('');
+        `;
+        item.appendChild(buildBadge(t.estado, true));
+        // Al hacer clic en un ticket de la lista, ir al detalle seguro (POST /consulta)
+        item.addEventListener('click', () => verDetalleDesde(t.id_ticket));
+        lista.appendChild(item);
+      });
+
       lista.classList.add('visible');
     }
 
-    // ── CONSULTA PRINCIPAL ──────────────────────────────────────
+    // Consulta segura del detalle desde la lista (usa POST /consulta con el DNI guardado)
+    async function verDetalleDesde(id_ticket) {
+      try {
+        const res = await fetch('/api/tickets/consulta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dni: dniBusqueda, id_ticket }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          mostrarDetalle(data.data);
+        }
+      } catch (_) {
+        // silencioso — ya están en la lista, el detalle falló por red
+      }
+    }
+
+    // ── CONSULTA PRINCIPAL ───────────────────────────────────────
     async function consultar() {
-      const dni    = document.getElementById('dni').value.trim();
-      const ticket = document.getElementById('ticket').value.trim();
-      const dniInput = document.getElementById('dni');
-      const dniError = document.getElementById('dni-error');
+      const dni    = document.getElementById('inp-dni').value.trim();
+      const ticket = document.getElementById('inp-ticket').value.trim();
 
-      // Validación DNI
-      dniInput.classList.remove('error');
-      dniError.classList.remove('visible');
+      // Resetear errores
+      ['inp-dni','inp-ticket'].forEach(id => {
+        document.getElementById(id).classList.remove('error');
+      });
+      ['err-dni','err-ticket'].forEach(id => {
+        document.getElementById(id).classList.remove('visible');
+      });
 
-      if (!/^\d{8}$/.test(dni)) {
-        dniInput.classList.add('error');
-        dniError.classList.add('visible');
-        dniInput.focus();
+      // Validar DNI
+      if (!DNI_RE.test(dni)) {
+        document.getElementById('inp-dni').classList.add('error');
+        document.getElementById('err-dni').classList.add('visible');
+        document.getElementById('inp-dni').focus();
+        return;
+      }
+
+      // Validar formato UUID si se ingresó ticket
+      if (ticket && !UUID_RE.test(ticket)) {
+        document.getElementById('inp-ticket').classList.add('error');
+        document.getElementById('err-ticket').classList.add('visible');
+        document.getElementById('inp-ticket').focus();
         return;
       }
 
       limpiarResultados();
       setLoading(true);
+      dniBusqueda = dni;
 
       try {
-        let data;
-
         if (ticket) {
-          // Buscar ticket específico por ID
-          const res = await fetch(`/api/tickets/${encodeURIComponent(ticket)}`);
-          data = await res.json();
+          // ── POST /consulta: FEAT01 seguridad — valida DNI + ticket juntos
+          const res  = await fetch('/api/tickets/consulta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dni, id_ticket: ticket }),
+          });
+          const data = await res.json();
 
           if (!res.ok || !data.success) {
-            mostrarError('No encontramos tu ticket', 'Verifica el número de ticket e intenta de nuevo.');
+            mostrarError(
+              'No encontramos tu ticket',
+              data.message || 'Verifica tu DNI y número de ticket.'
+            );
           } else {
-            mostrarTicket(data.data);
+            mostrarDetalle(data.data);
           }
+
         } else {
-          // Buscar todos los tickets del DNI
-          const res = await fetch(`/api/tickets/dni/${encodeURIComponent(dni)}`);
-          data = await res.json();
+          // ── GET /dni/:dni: lista todos los tickets de ese DNI
+          const res  = await fetch(`/api/tickets/dni/${encodeURIComponent(dni)}`);
+          const data = await res.json();
 
           if (!res.ok || !data.success) {
-            mostrarError('Error al consultar', 'Hubo un problema al procesar tu solicitud. Intenta más tarde.');
+            mostrarError('Error al consultar', 'Hubo un problema. Intenta más tarde.');
           } else if (data.total === 0) {
-            mostrarError('No encontramos tickets', 'No hay tickets asociados a tu DNI. Si dejaste un equipo, consulta con el técnico.');
+            mostrarError(
+              'No encontramos tickets',
+              'No hay tickets asociados a tu DNI. Si dejaste un equipo recientemente, consulta en tienda.'
+            );
           } else if (data.total === 1) {
-            mostrarTicket(data.data[0]);
+            // Un solo ticket — ir directo al detalle seguro
+            verDetalleDesde(data.data[0].id_ticket);
           } else {
             mostrarLista(data.data);
           }
         }
-      } catch (err) {
-        mostrarError('Sin conexión', 'No se pudo conectar con el servidor. Verifica tu conexión e intenta de nuevo.');
+
+      } catch (_) {
+        mostrarError('Sin conexión', 'No se pudo conectar con el servidor. Verifica tu internet.');
       } finally {
         setLoading(false);
       }
     }
 
+    // ── EVENTOS ──────────────────────────────────────────────────
     // Enter para consultar
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') consultar();
+    ['inp-dni','inp-ticket'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') consultar();
+      });
     });
 
-    // Solo números en DNI
-    document.getElementById('dni').addEventListener('input', function() {
+    // Solo dígitos en DNI
+    document.getElementById('inp-dni').addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '').slice(0, 8);
     });
   </script>
+
 </body>
 </html>
