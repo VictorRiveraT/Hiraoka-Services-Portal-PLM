@@ -195,10 +195,10 @@ Hiraoka-Services-Portal-PLM/
 | Integrante | Rol | GitHub |
 |-----------|-----|--------|
 | Victor Daniel Rivera Torres | Scrum Master / Desarrollador | [@VictorRiveraT](https://github.com/VictorRiveraT) |
-| Vanesa Doris Rioja Cruz | Disenadora / Arquitecta | — |
-| Jander Huamani Salazar | Analista | — |
+| Vanesa Doris Rioja Cruz | Disenadora / Arquitecta | [@vanesarioja29](https://github.com/vanesarioja29) |
+| Jander Huamani Salazar | Analista | [@Jander03](https://github.com/Jander03) |
 | Jesus Anselmo Morales Alvarado | Desarrollador Backend | [@jessusmorales](https://github.com/jessusmorales) |
-| Frank Kevin Jauregui Bendezu | Tester / QA | — |
+| Frank Kevin Jauregui Bendezu | Tester / QA | [@FRANKEVIN25](https://github.com/FRANKEVIN25) |
 
 ---
 
