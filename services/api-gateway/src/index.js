@@ -56,6 +56,18 @@ app.use('/api/tickets', (req, res, next) => {
   })(req, res, next);
 });
 
+// Proxy → Taller Service
+app.use('/api/taller', createProxyMiddleware({
+  target: process.env.TALLER_SERVICE_URL || 'http://taller-service:3003',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error('[GATEWAY] Error al conectar con taller-service:', err.message);
+      res.status(503).json({ error: 'Servicio de taller no disponible.' });
+    },
+  },
+}));
+
 // ── Frontend público → Ticket Service ────────────────────────
 app.use('/', createProxyMiddleware({
   target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',

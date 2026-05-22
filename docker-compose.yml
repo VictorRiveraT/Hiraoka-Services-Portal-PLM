@@ -42,9 +42,11 @@ services:
       - PORT=3000
       - AUTH_SERVICE_URL=http://auth-service:3001
       - TICKET_SERVICE_URL=http://ticket-service:3002
+      - TALLER_SERVICE_URL=http://taller-service:3003
     depends_on:
       - auth-service
       - ticket-service
+      - taller-service
     networks:
       - hiraoka_network
 
@@ -78,6 +80,23 @@ services:
       - api-gateway
     networks:
       - hiraoka_network
+
+  taller-service:
+      build: ./services/taller-service
+      container_name: hiraoka_taller
+      restart: unless-stopped
+      environment:
+        - NODE_ENV=development
+        - PORT=3003
+        - DB_HOST=postgres
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=${DB_NAME}
+        - JWT_SECRET=${JWT_SECRET}
+      depends_on:
+        - postgres
+      networks:
+        - hiraoka_network
 
 volumes:
   postgres_data:
