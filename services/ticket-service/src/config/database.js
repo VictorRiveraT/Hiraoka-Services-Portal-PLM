@@ -8,6 +8,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
 });
 
+// Forzar UTF-8 en cada nueva conexion
+pool.on('connect', (client) => {
+  client.query("SET client_encoding = 'UTF8'");
+});
+
 pool.on('error', (err) => {
   console.error('[ticket-service] Error en pool DB:', err);
   process.exit(-1);

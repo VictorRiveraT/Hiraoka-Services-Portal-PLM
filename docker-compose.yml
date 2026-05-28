@@ -9,9 +9,10 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./services/auth-service/src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - ./services/auth-service/src/db/audit.sql:/docker-entrypoint-initdb.d/02_audit.sql:ro
+       - postgres_data:/var/lib/postgresql/data
+       - ./services/auth-service/src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+       - ./services/auth-service/src/db/audit.sql:/docker-entrypoint-initdb.d/02_audit.sql:ro
+       - ./services/auth-service/src/db/seed.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
     networks:
       - hiraoka_network
 

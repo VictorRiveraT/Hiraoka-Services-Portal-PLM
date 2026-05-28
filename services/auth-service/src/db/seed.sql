@@ -1,3 +1,5 @@
+SET client_encoding = 'UTF8';
+
 -- ============================================================
 -- HIRAOKA SERVICES — Datos de prueba (seed)
 -- HSPP-35 | Sprint 3
