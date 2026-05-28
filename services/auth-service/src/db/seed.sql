@@ -29,7 +29,7 @@ VALUES (
   'b0000000-0000-0000-0000-000000000099',
   'Jander Huamaní López',
   'jhuamani',
-  '$2b$12$K8Pq9mZ3Lv2Nw4Rx1TuOeO9p7dY5cA6sB8fE3hG2jI0kJ1lM4nP6',
+  '$2b$12$eB6wPhbN48aqwg80ntpA7.PfErQ8ju3i42p/ZHlxypkGtQ1AlE3wa',
   (SELECT id_rol FROM roles WHERE nombre = 'Tecnico' LIMIT 1)
 )
 ON CONFLICT (username) DO NOTHING;

@@ -187,6 +187,8 @@ Hiraoka-Services-Portal-PLM/
 | GET | `/api/tickets/:id` | Consultar ticket por ID | No |
 | GET | `/api/tickets/dni/:dni` | Consultar tickets por DNI | No |
 | POST | `/api/tickets/consulta` | Consulta segura DNI + ticket | No |
+| PUT | `/api/tickets/:id/estado` | Actualizar estado del ticket asignado | Si |
+| POST | `/api/tickets/:id/asignar` | Asignar tecnico a ticket | Si |
 
 ---
 

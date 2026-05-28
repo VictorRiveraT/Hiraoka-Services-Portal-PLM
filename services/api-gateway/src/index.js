@@ -7,20 +7,20 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Seguridad ─────────────────────────────────────────────────
+// Seguridad
 app.use(helmet({
   contentSecurityPolicy: false,
 }));
 
-// ── Rate limiting global (protección ante sobrecargas) ────────
+// Rate limiting global
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
-  message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
+  message: { error: 'Demasiadas solicitudes. Intenta mas tarde.' },
 });
 app.use(globalLimiter);
 
-// ── Health check del gateway ──────────────────────────────────
+// Health check del gateway
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -29,19 +29,22 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── Proxy → Auth Service ──────────────────────────────────────
-app.use('/api/auth', createProxyMiddleware({
-  target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
-  changeOrigin: true,
-  on: {
-    error: (err, req, res) => {
-      console.error('[GATEWAY] Error al conectar con auth-service:', err.message);
-      res.status(503).json({ error: 'Servicio de autenticación no disponible.' });
+// Proxy -> Auth Service
+app.use('/api/auth', (req, res, next) => {
+  req.url = '/api/auth' + req.url;
+  createProxyMiddleware({
+    target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con auth-service:', err.message);
+        res.status(503).json({ error: 'Servicio de autenticacion no disponible.' });
+      },
     },
-  },
-}));
+  })(req, res, next);
+});
 
-// ── Proxy → Ticket Service ────────────────────────────────────
+// Proxy -> Ticket Service
 app.use('/api/tickets', (req, res, next) => {
   req.url = '/tickets' + req.url;
   createProxyMiddleware({
@@ -56,7 +59,7 @@ app.use('/api/tickets', (req, res, next) => {
   })(req, res, next);
 });
 
-// Proxy → Taller Service
+// Proxy -> Taller Service
 app.use('/api/taller', createProxyMiddleware({
   target: process.env.TALLER_SERVICE_URL || 'http://taller-service:3003',
   changeOrigin: true,
@@ -68,19 +71,19 @@ app.use('/api/taller', createProxyMiddleware({
   },
 }));
 
-// ── Frontend público → Ticket Service ────────────────────────
+// Frontend publico -> Ticket Service
 app.use('/', createProxyMiddleware({
   target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
   changeOrigin: true,
 }));
 
-// ── Ruta no encontrada ────────────────────────────────────────
+// Ruta no encontrada
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada en el gateway.' });
 });
 
-// ── Iniciar ───────────────────────────────────────────────────
+// Iniciar
 app.listen(PORT, () => {
   console.log(`[api-gateway] corriendo en puerto ${PORT}`);
-  console.log(`[api-gateway] auth-service → ${process.env.AUTH_SERVICE_URL}`);
+  console.log(`[api-gateway] auth-service -> ${process.env.AUTH_SERVICE_URL}`);
 });

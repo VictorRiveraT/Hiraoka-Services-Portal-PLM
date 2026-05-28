@@ -16,7 +16,11 @@ exports.login = async (req, res) => {
   try {
     // 1. Buscar usuario
     const result = await pool.query(
-      'SELECT * FROM usuarios WHERE username = $1 AND activo = TRUE',
+      `SELECT u.*, r.nombre AS rol
+       FROM usuarios u
+       JOIN roles r ON u.id_rol = r.id_rol
+       WHERE u.username = $1
+         AND u.activo = TRUE`,
       [username]
     );
 
