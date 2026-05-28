@@ -63,6 +63,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     depends_on:
       - postgres
     networks:
@@ -95,6 +96,7 @@ services:
         - DB_PASSWORD=${DB_PASSWORD}
         - DB_NAME=${DB_NAME}
         - JWT_SECRET=${JWT_SECRET}
+        - CORS_ORIGIN=${CORS_ORIGIN}
       depends_on:
         - postgres
       networks:

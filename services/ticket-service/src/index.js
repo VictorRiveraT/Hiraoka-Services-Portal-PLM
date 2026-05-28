@@ -8,7 +8,11 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost',
+  methods: ['GET', 'POST', 'PUT'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
