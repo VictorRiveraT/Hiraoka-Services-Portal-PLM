@@ -536,7 +536,7 @@
     // ── DETALLE DE TICKET (HSPP-23) ──────────────────────────────
     function mostrarDetalle(t) {
       // Header
-      const shortId = t.id_ticket ? t.id_ticket.toString().substring(0, 8).toUpperCase() : '—';
+      const shortId = t.id_ticket ? t.id_ticket.toString().slice(-8).toUpperCase() : '—';
       document.getElementById('det-id').textContent      = `Ticket #${shortId}`;
       document.getElementById('det-equipo').textContent  = `${t.producto || 'Equipo'} ${t.marca ? '· ' + t.marca : ''} ${t.modelo ? t.modelo : ''}`.trim();
       document.getElementById('det-cliente').textContent = t.cliente || '—';
