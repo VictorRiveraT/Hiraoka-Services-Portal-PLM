@@ -7,8 +7,29 @@ const authRoutes = require('./routes/auth.routes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  baseUri: ["'self'"],
+  frameAncestors: ["'none'"],
+  objectSrc: ["'none'"],
+  scriptSrc: ["'self'"],
+  scriptSrcAttr: ["'none'"],
+  styleSrc: ["'self'"],
+  imgSrc: ["'self'", 'data:'],
+  fontSrc: ["'self'"],
+  connectSrc: ["'self'"],
+  formAction: ["'self'"],
+};
+
 // ── Seguridad y parseo ────────────────────────────────────────────
-app.use(helmet());
+app.disable('x-powered-by');
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: cspDirectives,
+  },
+  xXssProtection: false,
+}));
 app.use(express.json());
 
 // ── Health check (para el API Gateway) ───────────────────────────

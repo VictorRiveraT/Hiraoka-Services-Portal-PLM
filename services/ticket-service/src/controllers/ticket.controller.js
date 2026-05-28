@@ -56,6 +56,13 @@ const registrarAuditoria = async (
 const getTicketById = async (req, res) => {
   const { id } = req.params;
 
+  if (!esUuidValido(id)) {
+    return res.status(400).json({
+      success: false,
+      message: "El id del ticket no tiene un formato valido.",
+    });
+  }
+
   try {
     const result = await pool.query(
       `SELECT 

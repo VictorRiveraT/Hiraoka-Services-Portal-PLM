@@ -7,9 +7,28 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  baseUri: ["'self'"],
+  frameAncestors: ["'none'"],
+  objectSrc: ["'none'"],
+  scriptSrc: ["'self'"],
+  scriptSrcAttr: ["'none'"],
+  styleSrc: ["'self'"],
+  imgSrc: ["'self'", 'data:'],
+  fontSrc: ["'self'"],
+  connectSrc: ["'self'"],
+  formAction: ["'self'"],
+};
+
 // Seguridad
+app.disable('x-powered-by');
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: cspDirectives,
+  },
+  xXssProtection: false,
 }));
 
 // Rate limiting global

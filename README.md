@@ -107,17 +107,30 @@ Editar `.env` con las credenciales del equipo:
 
 ```env
 DB_NAME=hiraoka_services
-DB_USER=hiraoka_admin
+DB_USER=hiraoka_user
 DB_PASSWORD=tu_password_seguro
 JWT_SECRET=tu_secreto_minimo_32_caracteres
+JWT_EXPIRATION=30m
 NODE_ENV=development
+AUTH_SERVICE_PORT=3001
+API_GATEWAY_PORT=3000
+TICKET_SERVICE_PORT=3002
+TALLER_SERVICE_PORT=3003
+AUTH_SERVICE_URL=http://auth-service:3001
+TICKET_SERVICE_URL=http://ticket-service:3002
+TALLER_SERVICE_URL=http://taller-service:3003
+CORS_ORIGIN=http://localhost,http://localhost:80
 ```
+
+`DB_PASSWORD` se mapea internamente como `POSTGRES_PASSWORD` para el contenedor de PostgreSQL. El `.env` real contiene secretos y debe compartirse solo por un canal seguro; en Git debe quedar únicamente `.env.example`.
 
 ### 3. Levantar el sistema
 
 ```bash
 docker compose up --build
 ```
+
+El servicio `db-seed` ejecuta `init.sql`, `audit.sql` y `seed.sql` de forma idempotente en cada arranque. Esto permite que una base nueva quede lista automaticamente y que volumenes locales antiguos reparen los datos de prueba UTF-8 sin borrar `postgres_data`.
 
 ### 4. Verificar
 
@@ -177,8 +190,8 @@ Hiraoka-Services-Portal-PLM/
 | Metodo | Endpoint | Descripcion | Auth |
 |--------|----------|-------------|------|
 | POST | `/api/auth/login` | Iniciar sesion | No |
-| POST | `/api/auth/register` | Registrar usuario | No |
 | GET | `/api/auth/verify` | Verificar token | Si |
+| POST | `/api/auth/logout` | Cerrar sesion | Si |
 
 ### Ticket Service (`/api/tickets`)
 

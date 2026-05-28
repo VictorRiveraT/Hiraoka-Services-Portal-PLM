@@ -150,3 +150,47 @@ VALUES
    NOW() + INTERVAL '3 days')
 
 ON CONFLICT (id_ticket) DO NOTHING;
+
+-- ============================================================
+-- CORRECCION IDEMPOTENTE DE TEXTO UTF-8
+-- Permite reparar volumenes locales inicializados con seeds antiguos.
+-- ============================================================
+UPDATE clientes
+SET nombre = CASE id_cliente
+  WHEN 'a1000000-0000-0000-0000-000000000001' THEN 'Ana Torres Ríos'
+  WHEN 'a1000000-0000-0000-0000-000000000002' THEN 'Carlos Méndez Salas'
+  WHEN 'a1000000-0000-0000-0000-000000000003' THEN 'Elena Ríos Castillo'
+  ELSE nombre
+END
+WHERE id_cliente IN (
+  'a1000000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-000000000002',
+  'a1000000-0000-0000-0000-000000000003'
+);
+
+UPDATE usuarios
+SET nombre_completo = 'Jander Huamaní López'
+WHERE id_usuario = 'b0000000-0000-0000-0000-000000000099';
+
+UPDATE tickets
+SET descripcion_problema = CASE id_ticket
+  WHEN 'd1000000-0000-0000-0000-000000000001' THEN 'La laptop no enciende al presionar el botón de encendido. Cargador funciona correctamente.'
+  WHEN 'd1000000-0000-0000-0000-000000000002' THEN 'Pantalla presenta líneas verticales después de una caída. Táctil sigue funcionando.'
+  WHEN 'd1000000-0000-0000-0000-000000000003' THEN 'El iPad no carga. Puerto Lightning con suciedad y posible daño interno.'
+  WHEN 'd1000000-0000-0000-0000-000000000004' THEN 'La lavadora emitía ruido excesivo durante el centrifugado. Se reemplazó el rodamiento.'
+  WHEN 'd1000000-0000-0000-0000-000000000005' THEN 'El televisor no encendía. Fuente de poder defectuosa, se reemplazó.'
+  WHEN 'd1000000-0000-0000-0000-000000000006' THEN 'Teclado no responde en algunas teclas. Se sospecha de daño por líquido.'
+  WHEN 'd1000000-0000-0000-0000-000000000007' THEN 'Batería se descarga en menos de 2 horas. El equipo tiene 2 años de uso.'
+  WHEN 'd1000000-0000-0000-0000-000000000008' THEN 'Imagen con franjas horizontales y parpadeo constante. Panel OLED con daño parcial.'
+  ELSE descripcion_problema
+END
+WHERE id_ticket IN (
+  'd1000000-0000-0000-0000-000000000001',
+  'd1000000-0000-0000-0000-000000000002',
+  'd1000000-0000-0000-0000-000000000003',
+  'd1000000-0000-0000-0000-000000000004',
+  'd1000000-0000-0000-0000-000000000005',
+  'd1000000-0000-0000-0000-000000000006',
+  'd1000000-0000-0000-0000-000000000007',
+  'd1000000-0000-0000-0000-000000000008'
+);

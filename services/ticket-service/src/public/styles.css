@@ -1,0 +1,313 @@
+/* ── TOKENS DE DISEÑO (Vanesa - Guía de Estados HSPP-24) ── */
+    :root {
+      --rojo-primario:  #CC0000;
+      --rojo-hover:     #AA0000;
+      --rojo-claro:     #FFEBEE;
+      --texto:          #212121;
+      --superficie:     #F5F5F5;
+      --borde:          #E0E0E0;
+      --deshabilitado:  #9E9E9E;
+      --advertencia:    #E65100;
+      --error:          #B71C1C;
+      --fondo:          #FFFFFF;
+      --alerta-suave:   #FFF8E1;
+
+      --radio-sm:   4px;
+      --radio-md:   8px;
+      --radio-lg:   12px;
+
+      --xs:  0.25rem;
+      --sm:  0.5rem;
+      --md:  1rem;
+      --lg:  1.5rem;
+      --xl:  2rem;
+      --xxl: 3rem;
+
+      /* Estados — HSPP-24 Guía de estados visuales */
+      --estado-recibido-bg:       #F1F8E9;
+      --estado-recibido-txt:      #558B2F;
+      --estado-recibido-borde:    #DCEDC8;
+
+      --estado-diagnostico-bg:    #FFF3E0;
+      --estado-diagnostico-txt:   #E65100;
+      --estado-diagnostico-borde: #FFE082;
+
+      --estado-reparacion-bg:     #FFEBEE;
+      --estado-reparacion-txt:    #CC0000;
+      --estado-reparacion-borde:  #FFCDD2;
+
+      --estado-listo-bg:          #E3F2FD;
+      --estado-listo-txt:         #0D47A1;
+      --estado-listo-borde:       #BBDEFB;
+
+      --estado-entregado-bg:      #F3E5F5;
+      --estado-entregado-txt:     #4A148C;
+      --estado-entregado-borde:   #CE93D8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    [hidden] { display: none !important; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      color: var(--texto);
+      background: var(--superficie);
+      min-height: 100vh;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      background: var(--rojo-primario);
+      padding: var(--md) var(--lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .navbar-brand { text-align: center; color: white; }
+    .navbar-brand .logo    { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+    .navbar-brand .tagline { font-size: 0.65rem; letter-spacing: 0.2em; opacity: 0.85; font-weight: 400; }
+
+    /* ── LAYOUT ── */
+    .container      { max-width: 480px; margin: 0 auto; padding: var(--lg) var(--md); }
+    .content-wrap   { padding-bottom: 72px; }
+
+    /* ── VISTAS ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── HERO ── */
+    .hero { text-align: center; padding: var(--xl) 0 var(--lg); }
+    .hero h1 { font-size: 1.5rem; font-weight: 700; color: var(--texto); margin-bottom: var(--sm); }
+    .hero p  { font-size: 0.9rem; color: var(--deshabilitado); line-height: 1.5; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--fondo);
+      border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      padding: var(--xl);
+      margin-bottom: var(--lg);
+    }
+
+    /* ── FORMULARIO ── */
+    .form-group  { margin-bottom: var(--lg); }
+    .form-group-tight { margin-bottom: 0; }
+    .form-label  { display: block; font-size: 0.75rem; font-weight: 500; color: var(--texto); margin-bottom: var(--xs); }
+    .form-hint   { color: var(--deshabilitado); font-weight: 400; }
+    .form-input  {
+      width: 100%; height: 44px; padding: 0 var(--md);
+      border: 1.5px solid var(--borde); border-radius: var(--radio-sm);
+      font-family: Arial, Helvetica, sans-serif; font-size: 0.9rem; color: var(--texto);
+      background: var(--fondo); transition: border-color 0.15s; outline: none;
+    }
+    .form-input::placeholder { color: var(--deshabilitado); }
+    .form-input:focus  { border-color: var(--rojo-primario); box-shadow: 0 0 0 3px rgba(204,0,0,0.08); }
+    .form-input.error  { border-color: var(--error); }
+    .form-error        { font-size: 0.72rem; color: var(--error); margin-top: 4px; display: none; }
+    .form-error.visible{ display: block; }
+
+    /* ── BOTONES ── */
+    .btn-primary {
+      width: 100%; height: 44px;
+      background: var(--rojo-primario); color: white; border: none;
+      border-radius: var(--radio-sm); font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s, transform 0.1s; letter-spacing: 0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primary:hover   { background: var(--rojo-hover); }
+    .btn-primary:active  { transform: scale(0.98); }
+    .btn-primary:disabled{ background: var(--deshabilitado); cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      width: 100%; height: 44px; background: transparent;
+      color: var(--rojo-primario); border: 1.5px solid var(--rojo-primario);
+      border-radius: var(--radio-sm); font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: var(--rojo-claro); }
+
+    .btn-link {
+      background: none; border: none; color: var(--rojo-primario);
+      font-size: 0.85rem; cursor: pointer; padding: 0; text-decoration: underline;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── BADGE DE ESTADO (HSPP-24) ── */
+    .badge {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 4px 10px; border-radius: var(--radio-sm);
+      border: 1px solid; white-space: nowrap;
+      min-height: 44px; min-width: 44px;   /* touch target WCAG */
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .badge-Recibido       { background: var(--estado-recibido-bg);    color: var(--estado-recibido-txt);    border-color: var(--estado-recibido-borde); }
+    .badge-Diagnosticando { background: var(--estado-diagnostico-bg); color: var(--estado-diagnostico-txt); border-color: var(--estado-diagnostico-borde); }
+    .badge-Reparando      { background: var(--estado-reparacion-bg);  color: var(--estado-reparacion-txt);  border-color: var(--estado-reparacion-borde); }
+    .badge-Listo          { background: var(--estado-listo-bg);       color: var(--estado-listo-txt);       border-color: var(--estado-listo-borde); }
+    .badge-Entregado      { background: var(--estado-entregado-bg);   color: var(--estado-entregado-txt);   border-color: var(--estado-entregado-borde); }
+
+    /* Badge pequeño para lista */
+    .badge-sm { min-height: unset; min-width: unset; font-size: 0.65rem; padding: 3px 8px; }
+
+    /* ── RESULTADO — LABEL ── */
+    .resultado-label {
+      font-size: 0.7rem; color: var(--deshabilitado);
+      text-align: center; letter-spacing: 0.1em; margin-bottom: var(--md);
+      display: none;
+    }
+    .resultado-label-spaced { margin-top: var(--lg); }
+    .resultado-label.visible { display: block; }
+
+    /* ── LISTA DE TICKETS ── */
+    .tickets-list { display: none; }
+    .tickets-list.visible { display: block; }
+    .tickets-summary {
+      font-size: 0.8rem;
+      color: var(--deshabilitado);
+      margin-bottom: var(--md);
+      line-height: 1.5;
+    }
+
+    .ticket-item {
+      background: var(--fondo); border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: var(--md) var(--lg); margin-bottom: var(--md);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--md);
+      cursor: pointer; transition: box-shadow 0.15s;
+      animation: slideUp 0.25s ease;
+      min-height: 64px;
+    }
+    .ticket-item:hover  { box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+    .ticket-item-info { min-width: 0; }
+    .ticket-item-info .id   { font-weight: 700; font-size: 0.8rem; color: var(--texto); line-height: 1.35; overflow-wrap: anywhere; }
+    .ticket-item-info .prod { font-size: 0.75rem; color: var(--deshabilitado); margin-top: 2px; }
+
+    /* ── VISTA DETALLE DE TICKET (HSPP-23) ── */
+    .ticket-detail { display: none; animation: slideUp 0.3s ease; }
+    .ticket-detail.visible { display: block; }
+
+    .detail-back {
+      display: flex; align-items: center; gap: var(--sm);
+      margin-bottom: var(--md); cursor: pointer; color: var(--rojo-primario);
+      font-size: 0.85rem; font-weight: 500;
+    }
+    .detail-back svg { width: 18px; height: 18px; }
+
+    .detail-header {
+      background: var(--fondo); border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      padding: var(--lg); margin-bottom: var(--md);
+    }
+    .detail-ticket-num { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .detail-equipo     { font-size: 0.85rem; color: var(--deshabilitado); margin-bottom: var(--md); }
+    .detail-serie      { font-size: 0.75rem; color: var(--deshabilitado); }
+
+    .alerta-fecha {
+      background: var(--alerta-suave); border-radius: var(--radio-sm);
+      padding: var(--md); font-size: 0.8rem; color: var(--advertencia);
+      font-weight: 500; margin-top: var(--md); display: flex; align-items: center; gap: var(--sm);
+    }
+    .alerta-fecha svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── TIMELINE DE ESTADOS (HSPP-23 detalle) ── */
+    .timeline-section {
+      background: var(--fondo); border-radius: var(--radio-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+      padding: var(--lg); margin-bottom: var(--md);
+    }
+    .timeline-title { font-size: 0.85rem; font-weight: 700; margin-bottom: var(--lg); }
+
+    .timeline { position: relative; padding-left: 32px; }
+
+    .tl-step { position: relative; padding-bottom: var(--lg); }
+    .tl-step:last-child { padding-bottom: 0; }
+
+    .tl-step::before {
+      content: '';
+      position: absolute; left: -23px; top: 22px; bottom: -4px;
+      width: 2px; background: var(--borde);
+    }
+    .tl-step:last-child::before { display: none; }
+
+    .tl-dot {
+      position: absolute; left: -30px; top: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--borde); border: 2px solid var(--borde);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tl-dot.done   { background: var(--rojo-primario); border-color: var(--rojo-primario); }
+    .tl-dot.active { background: var(--rojo-primario); border-color: var(--rojo-primario); box-shadow: 0 0 0 4px rgba(204,0,0,0.15); }
+    .tl-dot svg    { width: 8px; height: 8px; color: white; }
+
+    .tl-nombre  { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+    .tl-desc    { font-size: 0.78rem; color: var(--deshabilitado); line-height: 1.5; }
+    .tl-nombre.pendiente { color: var(--deshabilitado); font-weight: 400; }
+
+    .tl-step.active-step .tl-nombre { color: var(--rojo-primario); }
+    .tl-step.active-step .tl-desc   { color: var(--texto); }
+
+    /* ── META-DATOS DEL TICKET ── */
+    .meta-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: var(--md); margin-top: var(--md);
+    }
+    .meta-item label { font-size: 0.68rem; color: var(--deshabilitado); display: block; margin-bottom: 2px; }
+    .meta-item span  { font-size: 0.82rem; font-weight: 500; }
+    .meta-item-full { grid-column: 1 / -1; }
+
+    .problema-box {
+      background: var(--superficie); border-radius: var(--radio-sm);
+      padding: var(--md); margin-top: var(--md);
+      font-size: 0.8rem; line-height: 1.6; color: var(--texto);
+    }
+    .problema-label { font-size: 0.68rem; color: var(--deshabilitado); margin-bottom: 4px; }
+
+    /* ── ERROR CARD ── */
+    .error-card {
+      background: var(--fondo); border-radius: var(--radio-md);
+      padding: var(--xl); text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: none;
+      animation: slideUp 0.3s ease;
+    }
+    .error-card.visible { display: block; }
+    .error-card .icon   { font-size: 2.5rem; margin-bottom: var(--md); }
+    .error-card h3      { font-size: 1rem; font-weight: 700; color: var(--texto); margin-bottom: var(--sm); }
+    .error-card p       { font-size: 0.8rem; color: var(--deshabilitado); line-height: 1.5; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--fondo); border-top: 1px solid var(--borde);
+      display: flex; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: var(--sm) 0; font-size: 0.65rem; color: var(--deshabilitado);
+      cursor: pointer; transition: color 0.15s; gap: 3px;
+      min-height: 48px; justify-content: center;
+    }
+    .nav-item.active { color: var(--rojo-primario); }
+    .nav-item svg    { width: 20px; height: 20px; }
+
+    /* ── ANIMACIÓN ── */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }

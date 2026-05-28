@@ -16,21 +16,41 @@ services:
     networks:
       - hiraoka_network
 
+  db-seed:
+    image: postgres:16-alpine
+    container_name: hiraoka_db_seed
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/auth-service/src/db:/db:ro
+    command: >
+      sh -c "until pg_isready -h postgres -U ${DB_USER} -d ${DB_NAME}; do sleep 1; done;
+      psql -h postgres -U ${DB_USER} -d ${DB_NAME} -v ON_ERROR_STOP=1
+      -f /db/init.sql -f /db/audit.sql -f /db/seed.sql"
+    networks:
+      - hiraoka_network
+
   auth-service:
     build: ./services/auth-service
     container_name: hiraoka_auth
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3001
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${AUTH_SERVICE_PORT:-3001}
       - DB_HOST=postgres
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=30m
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-30m}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      db-seed:
+        condition: service_completed_successfully
     networks:
       - hiraoka_network
 
@@ -39,11 +59,11 @@ services:
     container_name: hiraoka_gateway
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - TICKET_SERVICE_URL=http://ticket-service:3002
-      - TALLER_SERVICE_URL=http://taller-service:3003
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${API_GATEWAY_PORT:-3000}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
+      - TICKET_SERVICE_URL=${TICKET_SERVICE_URL:-http://ticket-service:3002}
+      - TALLER_SERVICE_URL=${TALLER_SERVICE_URL:-http://taller-service:3003}
     depends_on:
       - auth-service
       - ticket-service
@@ -56,16 +76,19 @@ services:
     container_name: hiraoka_ticket
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3002
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${TICKET_SERVICE_PORT:-3002}
       - DB_HOST=postgres
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
-      - CORS_ORIGIN=${CORS_ORIGIN}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      db-seed:
+        condition: service_completed_successfully
     networks:
       - hiraoka_network
 
@@ -89,16 +112,19 @@ services:
       container_name: hiraoka_taller
       restart: unless-stopped
       environment:
-        - NODE_ENV=development
-        - PORT=3003
+        - NODE_ENV=${NODE_ENV:-development}
+        - PORT=${TALLER_SERVICE_PORT:-3003}
         - DB_HOST=postgres
         - DB_USER=${DB_USER}
         - DB_PASSWORD=${DB_PASSWORD}
         - DB_NAME=${DB_NAME}
         - JWT_SECRET=${JWT_SECRET}
-        - CORS_ORIGIN=${CORS_ORIGIN}
+        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80}
       depends_on:
-        - postgres
+        postgres:
+          condition: service_started
+        db-seed:
+          condition: service_completed_successfully
       networks:
         - hiraoka_network
 

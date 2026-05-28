@@ -1,6 +1,7 @@
 # Variables de entorno (NUNCA subir a GitHub)
 .env
 .env.*
+!.env.example
 
 # Dependencias
 node_modules/
