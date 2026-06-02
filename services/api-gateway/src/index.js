@@ -68,6 +68,18 @@ app.use('/api/taller', createProxyMiddleware({
   },
 }));
 
+// Proxy -> Notification Service
+app.use('/api/notifications', createProxyMiddleware({
+  target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error('[GATEWAY] Error al conectar con notification-service:', err.message);
+      res.status(503).json({ error: 'Servicio de notificaciones no disponible.' });
+    },
+  },
+}));
+
 // ── Frontend público → Ticket Service ────────────────────────
 app.use('/', createProxyMiddleware({
   target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
