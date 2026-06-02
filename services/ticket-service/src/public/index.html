@@ -645,12 +645,13 @@
       const dni    = document.getElementById('inp-dni').value.trim();
       const ticket = document.getElementById('inp-ticket').value.trim();
 
-      // Resetear errores
+      // Resetear errores y limpiar resultados anteriores SIEMPRE
+      limpiarResultados();
       ['inp-dni','inp-ticket'].forEach(id => {
         document.getElementById(id).classList.remove('error');
       });
       ['err-dni','err-ticket'].forEach(id => {
-        document.getElementById(id).classList.remove('visible');
+        document.getElementById(id).classList.remove('visible')
       });
 
       // Validar DNI
@@ -669,7 +670,6 @@
         return;
       }
 
-      limpiarResultados();
       setLoading(true);
       dniBusqueda = dni;
 
