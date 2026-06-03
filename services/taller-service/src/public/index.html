@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hiraoka Services - Portal de Taller</title>
+    <link rel="stylesheet" href="/taller/styles.css">
+  </head>
+  <body>
+    <main class="login-view" id="login-view">
+      <header class="login-header">
+        <div class="brand">hiraoka <span>SERVICES</span></div>
+        <strong>TALLER</strong>
+      </header>
+
+      <form class="login-panel" id="login-form">
+        <h1>Acceso de taller</h1>
+        <label>
+          Usuario
+          <input id="username" name="username" autocomplete="username" required>
+        </label>
+        <label>
+          Contrasena
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary-action" type="submit">Ingresar</button>
+        <p class="form-error" id="login-error" hidden></p>
+      </form>
+    </main>
+
+    <section class="app-view" id="app-view" hidden>
+      <header class="topbar">
+        <div class="brand">hiraoka <span>SERVICES</span><b>TALLER</b></div>
+        <div class="topbar-status">
+          <span class="sync-pill" id="sync-pill">Sincronizado</span>
+          <span class="tech-pill" id="tech-pill">Tecnico: Jander Huamani</span>
+          <button class="icon-button" id="logout-button" type="button" aria-label="Cerrar sesion">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 4v16"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="sync-banner" id="sync-banner" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
+        <span>Modo offline - Sin conexion Wi-Fi local. Los datos se guardaran en memoria cache y se sincronizaran al restablecer la red.</span>
+      </div>
+
+      <div class="app-shell">
+        <aside class="sidebar">
+          <button class="side-item active" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            Tickets Asignados
+          </button>
+          <button class="side-item" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+            Historial de Equipos
+          </button>
+          <button class="side-item" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 16 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.3.31.66.5 1.1.6H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
+            Configuracion
+          </button>
+        </aside>
+
+        <section class="main-view" id="main-view">
+          <div class="page-heading">
+            <div>
+              <h1>Mis Tickets Asignados</h1>
+              <p id="assignment-count">0 ordenes activas</p>
+            </div>
+            <div class="toolbar">
+              <label class="search-field">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input id="search-input" type="search" placeholder="Buscar ticket...">
+              </label>
+              <select id="state-filter" aria-label="Filtrar por estado">
+                <option value="">Estado</option>
+                <option value="Recibido">Recibido</option>
+                <option value="Diagnosticando">En diagnostico</option>
+                <option value="Reparando">En reparacion</option>
+                <option value="Listo">Listo para retiro</option>
+                <option value="Entregado">Entregado</option>
+              </select>
+              <button class="download-button" id="download-csv" type="button">Descargar CSV / Excel</button>
+            </div>
+          </div>
+          <div class="assigned-list" id="assigned-list"></div>
+        </section>
+
+        <section class="detail-view" id="detail-view" hidden>
+          <button class="back-button" id="back-to-list" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+            Volver a mis tickets
+          </button>
+
+          <div class="detail-grid">
+            <aside class="ticket-info-card">
+              <h1 id="detail-code">Ticket #</h1>
+              <hr>
+              <h2 id="equipment-name">Equipo</h2>
+              <p id="equipment-serie">Serie</p>
+              <span class="warranty-chip">Con Garantia Activa</span>
+              <dl>
+                <div><dt>Ingreso:</dt><dd id="entry-date">-</dd></div>
+                <div><dt>Tecnico Asignado:</dt><dd id="assigned-tech">Jander Huamani</dd></div>
+                <div><dt>Cliente:</dt><dd id="customer-name">-</dd></div>
+              </dl>
+            </aside>
+
+            <form class="update-card" id="update-form">
+              <h2>Actualizar Estado de Equipo</h2>
+              <div class="state-grid" id="state-grid"></div>
+
+              <label class="field-label" for="observations">Observaciones Tecnicas (Requerido)</label>
+              <textarea id="observations" placeholder="Escriba los hallazgos tecnicos aqui..."></textarea>
+
+              <label class="field-label">Evidencia Visual (Opcional)</label>
+              <button class="evidence-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>
+                Adjuntar Fotografias de Evidencia
+              </button>
+
+              <div class="save-row">
+                <p class="panel-message" id="panel-message" hidden></p>
+                <button class="save-action" id="save-button" type="submit">Guardar Registro Local</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <script src="/taller/app.js" defer></script>
+  </body>
+</html>

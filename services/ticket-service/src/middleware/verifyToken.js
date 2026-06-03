@@ -1,8 +1,10 @@
 const jwt = require('jsonwebtoken');
 
+const JWT_PARTS = 3;
+
 /**
- * Middleware de autenticacion JWT
- * Protege los endpoints del panel tecnico (FEAT08, FEAT09)
+ * Middleware de autenticacion JWT.
+ * Protege los endpoints del panel tecnico (FEAT08, FEAT09).
  */
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -14,14 +16,19 @@ const verifyToken = (req, res, next) => {
     });
   }
 
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : authHeader;
-
-  if (!token) {
+  if (!authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: 'Acceso denegado. Formato de token invalido.',
+      message: 'Token invalido o malformado.',
+    });
+  }
+
+  const token = authHeader.slice(7).trim();
+
+  if (!token || token.split('.').length !== JWT_PARTS) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token invalido o malformado.',
     });
   }
 
@@ -36,9 +43,10 @@ const verifyToken = (req, res, next) => {
         message: 'Token expirado. Inicia sesion nuevamente.',
       });
     }
-    return res.status(403).json({
+
+    return res.status(401).json({
       success: false,
-      message: 'Token invalido.',
+      message: 'Token invalido o malformado.',
     });
   }
 };

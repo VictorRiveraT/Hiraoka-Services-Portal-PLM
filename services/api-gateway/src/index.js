@@ -90,17 +90,33 @@ app.use('/api/taller', createProxyMiddleware({
   },
 }));
 
-// Proxy -> Notification Service
-app.use('/api/notifications', createProxyMiddleware({
-  target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004',
+// Frontend tecnico -> Taller Service
+app.use('/taller', createProxyMiddleware({
+  target: process.env.TALLER_SERVICE_URL || 'http://taller-service:3003',
   changeOrigin: true,
+  pathRewrite: { '^/taller': '' },
   on: {
     error: (err, req, res) => {
-      console.error('[GATEWAY] Error al conectar con notification-service:', err.message);
-      res.status(503).json({ error: 'Servicio de notificaciones no disponible.' });
+      console.error('[GATEWAY] Error al conectar con frontend de taller:', err.message);
+      res.status(503).json({ error: 'Panel tecnico no disponible.' });
     },
   },
 }));
+
+// Proxy -> Notification Service
+app.use('/api/notifications', (req, res, next) => {
+  req.url = '/notifications' + req.url;
+  createProxyMiddleware({
+    target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con notification-service:', err.message);
+        res.status(503).json({ error: 'Servicio de notificaciones no disponible.' });
+      },
+    },
+  })(req, res, next);
+});
 
 // ── Frontend público → Ticket Service ────────────────────────
 app.use('/', createProxyMiddleware({

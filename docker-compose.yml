@@ -69,6 +69,7 @@ services:
       - auth-service
       - ticket-service
       - taller-service
+      - notification-service
     networks:
       - hiraoka_network
 
@@ -84,6 +85,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
+      - NOTIFICATION_TIMEOUT_MS=${NOTIFICATION_TIMEOUT_MS:-3000}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80}
     depends_on:
       postgres:

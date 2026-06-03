@@ -1,293 +1,273 @@
-// ── CONSTANTES DE ESTADO (HSPP-24 guía visual) ──────────────
-    const ESTADOS = ['Recibido', 'Diagnosticando', 'Reparando', 'Listo', 'Entregado'];
+const ESTADOS = ['Recibido', 'Diagnosticando', 'Reparando', 'Listo', 'Entregado'];
 
-    const ESTADO_INFO = {
-      Recibido:       { label: 'Recibido',            desc: 'Su equipo fue registrado en tienda. El estado físico inicial fue documentado por nuestro equipo.' },
-      Diagnosticando: { label: 'Diagnosticando',       desc: 'Un técnico especializado está evaluando su equipo para identificar la causa del problema.' },
-      Reparando:      { label: 'Reparando',            desc: 'Estamos realizando la reparación con repuestos autorizados. Le avisaremos cuando esté listo.' },
-      Listo:          { label: 'Listo',                desc: 'Su equipo está reparado y listo para ser recogido en tienda. Traiga su DNI y este número de ticket.' },
-      Entregado:      { label: 'Entregado',            desc: 'Su equipo fue entregado exitosamente. Gracias por confiar en Hiraoka Services.' },
-    };
+const ESTADO_LABELS = {
+  Recibido: 'Recibido',
+  Diagnosticando: 'En diagnostico',
+  Reparando: 'En reparacion',
+  Listo: 'Listo para retiro',
+  Entregado: 'Entregado',
+};
 
-    const ESTADO_LABELS = {
-      Recibido:       'Recibido',
-      Diagnosticando: 'Diagnosticando',
-      Reparando:      'Reparando',
-      Listo:          'Listo',
-      Entregado:      'Entregado',
-    };
+const ESTADO_COPY = {
+  Recibido: {
+    title: 'Equipo Recibido',
+    card: 'Su equipo ingreso con exito a nuestros almacenes de Lima. Se ha documentado el estado fisico inicial y esta programado para ingresar a mesa de trabajo.',
+    detail: 'Registrado en tienda de manera exitosa. Estado fisico inicial documentado detalladamente por nuestro equipo de atencion.',
+  },
+  Diagnosticando: {
+    title: 'Revision Tecnica (Diagnostico)',
+    card: 'Un especialista esta revisando los componentes internos de su equipo para identificar la causa exacta de la falla y verificar la cobertura de su garantia.',
+    detail: 'El tecnico especializado reviso el equipo. Se validan componentes, garantia y condicion fisica antes de iniciar una reparacion.',
+  },
+  Reparando: {
+    title: 'Reparacion en Proceso',
+    card: 'El diagnostico fue aprobado. Nos encontramos instalando los repuestos originales autorizados de fabrica para garantizar la operatividad de su dispositivo.',
+    detail: 'Instalando repuestos originales autorizados por la marca. Se estan realizando pruebas de hermeticidad y carga rapida.',
+  },
+  Listo: {
+    title: 'Listo para Retiro',
+    card: 'Buenas noticias. Su equipo supero con exito todas las pruebas de control de calidad y ya puede acercarse a la sede elegida para recogerlo.',
+    detail: 'Reparacion solucionada con exito. Recuerde traer su DNI fisico y el numero de ticket para la entrega.',
+  },
+  Entregado: {
+    title: 'Equipo Entregado',
+    card: 'La orden de servicio ha sido cerrada y el equipo fue entregado conforme al titular. Agradecemos su confianza en el soporte post-venta.',
+    detail: 'Servicio concluido y equipo entregado conforme al titular.',
+  },
+};
 
-    // UUID regex simple
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const DNI_RE  = /^\d{8}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TICKET_CODE_RE = /^TK-\d{4}-\d{3,}$/i;
+const DNI_RE = /^\d{8}$/;
 
-    let dniBusqueda = '';  // guardamos el DNI para el POST /consulta
+let currentDni = '';
 
-    // ── HELPERS ─────────────────────────────────────────────────
-    function setLoading(on) {
-      const btn  = document.getElementById('btn-consultar');
-      const txt  = document.getElementById('btn-text');
-      const spin = document.getElementById('spinner');
-      btn.disabled       = on;
-      txt.hidden = on;
-      spin.hidden = !on;
+function $(id) {
+  return document.getElementById(id);
+}
+
+function ticketCode(ticket) {
+  return ticket.codigo_ticket || String(ticket.id_ticket || '').slice(0, 8).toUpperCase();
+}
+
+function productName(ticket) {
+  return [ticket.producto, ticket.marca, ticket.modelo].filter(Boolean).join(' ') || 'Equipo registrado';
+}
+
+function fmtFecha(value) {
+  if (!value) return 'Por confirmar';
+  return new Date(value).toLocaleDateString('es-PE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function maskDni(dni) {
+  if (!dni || dni.length < 8) return '--------';
+  return `${dni.slice(0, 1)}XXXXX${dni.slice(-3)}`;
+}
+
+function setMode(viewId) {
+  document.querySelectorAll('.view').forEach((view) => view.classList.remove('active'));
+  $(viewId).classList.add('active');
+
+  document.body.classList.remove('mode-search', 'mode-results', 'mode-detail', 'mode-empty');
+  document.body.classList.add(`mode-${viewId.replace('view-', '')}`);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function clearValidation() {
+  ['inp-dni', 'inp-ticket'].forEach((id) => $(id).classList.remove('error'));
+  ['err-dni', 'err-ticket'].forEach((id) => $(id).classList.remove('visible'));
+}
+
+function setLoading(loading) {
+  $('btn-consultar').disabled = loading;
+  $('btn-text').hidden = loading;
+  $('spinner').hidden = !loading;
+}
+
+function badge(estado) {
+  const label = ESTADO_LABELS[estado] || estado || 'Sin estado';
+  return `<span class="badge state-${estado}">${label}</span>`;
+}
+
+function showEmpty(message) {
+  $('empty-message').textContent = message || 'Verifica el numero de DNI o codigo de ticket ingresado. Si acabas de dejar tu equipo en tienda, el registro puede tomar hasta 15 minutos.';
+  setMode('view-empty');
+}
+
+function renderResults(tickets) {
+  $('results-title').textContent = `Resultados de busqueda para el DNI: ${maskDni(currentDni)}`;
+  $('results-count').textContent = `${tickets.length} orden${tickets.length === 1 ? '' : 'es'} encontrada${tickets.length === 1 ? '' : 's'}`;
+
+  const list = $('tickets-list');
+  list.innerHTML = '';
+
+  tickets.forEach((ticket) => {
+    const estado = ticket.estado || 'Recibido';
+    const copy = ESTADO_COPY[estado] || ESTADO_COPY.Recibido;
+    const card = document.createElement('article');
+    card.className = 'ticket-result';
+    card.tabIndex = 0;
+    card.innerHTML = `
+      <header>
+        <h2>Ticket #${ticketCode(ticket)}</h2>
+        ${badge(estado)}
+      </header>
+      <p>${copy.card}</p>
+      <span class="action-copy">${estado === 'Entregado' ? 'Completar encuesta de satisfaccion (NPS)' : 'Ver detalle tecnico'} -></span>
+    `;
+    card.addEventListener('click', () => loadDetail(ticket.id_ticket || ticketCode(ticket)));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        loadDetail(ticket.id_ticket || ticketCode(ticket));
+      }
+    });
+    list.appendChild(card);
+  });
+
+  setMode('view-results');
+}
+
+function iconForStep(estado) {
+  if (estado === 'Reparando') {
+    return '<svg viewBox="0 0 24 24"><path d="m14.7 6.3 3-3a4 4 0 0 1-5 5l-7.4 7.4a2.1 2.1 0 1 1-3-3l7.4-7.4a4 4 0 0 1 5-5Z"/></svg>';
+  }
+  return '<svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg>';
+}
+
+function renderDetail(ticket) {
+  const estado = ticket.estado || 'Recibido';
+  const currentIndex = Math.max(0, ESTADOS.indexOf(estado));
+
+  $('detail-title').textContent = `Ticket #${ticketCode(ticket)}`;
+  $('det-equipo').textContent = productName(ticket);
+  $('det-badge-wrap').innerHTML = badge(estado);
+
+  if (ticket.fecha_estimada_entrega && estado !== 'Entregado') {
+    $('det-fecha-txt').textContent = `Fecha estimada de entrega: ${fmtFecha(ticket.fecha_estimada_entrega)}`;
+    $('det-fecha').hidden = false;
+  } else {
+    $('det-fecha').hidden = true;
+  }
+
+  const timeline = $('timeline');
+  timeline.innerHTML = '';
+
+  ESTADOS.forEach((stepEstado, index) => {
+    const copy = ESTADO_COPY[stepEstado] || ESTADO_COPY.Recibido;
+    const done = index < currentIndex;
+    const active = index === currentIndex;
+    const pending = index > currentIndex;
+    const step = document.createElement('section');
+    step.className = `tl-step${active ? ' active' : ''}${pending ? ' pending' : ''}`;
+    step.innerHTML = `
+      <div class="tl-dot ${done ? 'done' : ''} ${active ? 'active' : ''} ${stepEstado === 'Reparando' ? 'repair' : ''}" aria-hidden="true">${done || active ? iconForStep(stepEstado) : ''}</div>
+      <div class="tl-body">
+        <h3 class="tl-title">${copy.title}</h3>
+        <p class="tl-desc">${pending ? 'Pendiente de actualizacion.' : copy.detail}</p>
+      </div>
+    `;
+    timeline.appendChild(step);
+  });
+
+  setMode('view-detail');
+}
+
+async function loadDetail(idTicket) {
+  try {
+    const response = await fetch('/api/tickets/consulta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dni: currentDni, id_ticket: idTicket }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      showEmpty(data.message || 'No se pudo abrir el detalle de este ticket.');
+      return;
     }
+    renderDetail(data.data);
+  } catch (error) {
+    showEmpty('No se pudo conectar con el servidor. Intenta nuevamente.');
+  }
+}
 
-    function limpiarResultados() {
-      document.getElementById('tickets-list').classList.remove('visible');
-      document.getElementById('error-card').classList.remove('visible');
-      document.getElementById('resultado-label').classList.remove('visible');
-      document.getElementById('tickets-list').innerHTML = '';
-    }
+async function consultar(event) {
+  event.preventDefault();
+  clearValidation();
 
-    function mostrarError(titulo, msg) {
-      document.getElementById('resultado-label').classList.add('visible');
-      document.getElementById('error-title').textContent = titulo;
-      document.getElementById('error-msg').textContent   = msg;
-      document.getElementById('error-card').classList.add('visible');
-    }
+  const dni = $('inp-dni').value.trim();
+  const ticket = $('inp-ticket').value.trim().toUpperCase();
 
-    function fmtFecha(iso) {
-      if (!iso) return 'Por confirmar';
-      return new Date(iso).toLocaleDateString('es-PE', {
-        day: 'numeric', month: 'short', year: 'numeric'
+  if (!DNI_RE.test(dni)) {
+    $('inp-dni').classList.add('error');
+    $('err-dni').classList.add('visible');
+    $('inp-dni').focus();
+    return;
+  }
+
+  if (ticket && !UUID_RE.test(ticket) && !TICKET_CODE_RE.test(ticket)) {
+    $('inp-ticket').classList.add('error');
+    $('err-ticket').classList.add('visible');
+    $('inp-ticket').focus();
+    return;
+  }
+
+  currentDni = dni;
+  setLoading(true);
+
+  try {
+    if (ticket) {
+      const response = await fetch('/api/tickets/consulta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dni, id_ticket: ticket }),
       });
-    }
-
-    function buildBadge(estado, small = false) {
-      const div = document.createElement('span');
-      div.className = `badge badge-${estado}${small ? ' badge-sm' : ''}`;
-      div.textContent = ESTADO_LABELS[estado] || estado;
-      return div;
-    }
-
-    // ── VISTAS ──────────────────────────────────────────────────
-    function mostrarVista(id) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      window.scrollTo(0, 0);
-    }
-
-    function volverBusqueda() {
-      mostrarVista('view-busqueda');
-    }
-
-    // ── DETALLE DE TICKET (HSPP-23) ──────────────────────────────
-    function mostrarDetalle(t) {
-      // Header
-      const ticketId = t.id_ticket ? t.id_ticket.toString() : '—';
-      document.getElementById('det-id').textContent      = `Ticket #${ticketId}`;
-      document.getElementById('det-equipo').textContent  = `${t.producto || 'Equipo'} ${t.marca ? '- ' + t.marca : ''} ${t.modelo ? t.modelo : ''}`.trim();
-      document.getElementById('det-cliente').textContent = t.cliente || '—';
-      document.getElementById('det-ingreso').textContent = fmtFecha(t.fecha_ingreso);
-      document.getElementById('det-serie').textContent   = t.numero_serie || '—';
-      document.getElementById('det-problema').textContent= t.descripcion_problema || '—';
-
-      // Badge de estado
-      const badgeWrap = document.getElementById('det-badge-wrap');
-      badgeWrap.innerHTML = '';
-      badgeWrap.appendChild(buildBadge(t.estado));
-
-      // Fecha estimada
-      const fechaBox = document.getElementById('det-fecha');
-      if (t.fecha_estimada_entrega && t.estado !== 'Entregado') {
-        document.getElementById('det-fecha-txt').textContent =
-          `Fecha estimada de entrega: ${fmtFecha(t.fecha_estimada_entrega)}`;
-        fechaBox.hidden = false;
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        showEmpty(data.message || 'No encontramos un ticket con esos datos.');
       } else {
-        fechaBox.hidden = true;
+        renderDetail(data.data);
       }
-
-      // Timeline (HSPP-23)
-      const idxActual = ESTADOS.indexOf(t.estado);
-      const timeline  = document.getElementById('timeline');
-      timeline.innerHTML = '';
-
-      ESTADOS.forEach((estado, i) => {
-        const info = ESTADO_INFO[estado];
-        const done   = i < idxActual;
-        const active = i === idxActual;
-        const pend   = i > idxActual;
-
-        const step = document.createElement('div');
-        step.className = `tl-step${active ? ' active-step' : ''}`;
-
-        const dot = document.createElement('div');
-        dot.className = `tl-dot${done ? ' done' : active ? ' active' : ''}`;
-        if (done || active) {
-          dot.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
-        }
-
-        const nombre = document.createElement('div');
-        nombre.className = `tl-nombre${pend ? ' pendiente' : ''}`;
-        nombre.textContent = info.label;
-
-        const desc = document.createElement('div');
-        desc.className = 'tl-desc';
-        desc.textContent = (done || active) ? info.desc : '';
-
-        step.appendChild(dot);
-        step.appendChild(nombre);
-        if (!pend) step.appendChild(desc);
-        timeline.appendChild(step);
-      });
-
-      mostrarVista('view-detalle');
+      return;
     }
 
-    // ── LISTA DE TICKETS (múltiples) ─────────────────────────────
-    function mostrarLista(tickets) {
-      document.getElementById('resultado-label').classList.add('visible');
-      const lista = document.getElementById('tickets-list');
-
-      lista.innerHTML = '';
-      const summary = document.createElement('p');
-      summary.className = 'tickets-summary';
-      summary.textContent =
-        `Encontramos ${tickets.length} ticket(s) asociados a tu DNI. Toca uno para ver el detalle.`;
-      lista.appendChild(summary);
-
-      tickets.forEach(t => {
-        const item = document.createElement('div');
-        item.className = 'ticket-item';
-        const info = document.createElement('div');
-        info.className = 'ticket-item-info';
-
-        const ticketId = document.createElement('div');
-        ticketId.className = 'id';
-        ticketId.textContent = `Ticket #${(t.id_ticket || '').toString()}`;
-
-        const product = document.createElement('div');
-        product.className = 'prod';
-        product.textContent = t.producto || 'Equipo registrado';
-
-        info.appendChild(ticketId);
-        info.appendChild(product);
-        item.appendChild(info);
-        item.appendChild(buildBadge(t.estado, true));
-        // Al hacer clic en un ticket de la lista, ir al detalle seguro (POST /consulta)
-        item.addEventListener('click', () => verDetalleDesde(t.id_ticket));
-        lista.appendChild(item);
-      });
-
-      lista.classList.add('visible');
+    const response = await fetch(`/api/tickets/dni/${encodeURIComponent(dni)}`);
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      showEmpty(data.message || 'Hubo un problema al consultar. Intenta mas tarde.');
+    } else if (!data.total) {
+      showEmpty();
+    } else {
+      renderResults(data.data || []);
     }
+  } catch (error) {
+    showEmpty('No se pudo conectar con el servidor. Verifica tu conexion e intenta otra vez.');
+  } finally {
+    setLoading(false);
+  }
+}
 
-    // Consulta segura del detalle desde la lista (usa POST /consulta con el DNI guardado)
-    async function verDetalleDesde(id_ticket) {
-      try {
-        const res = await fetch('/api/tickets/consulta', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dni: dniBusqueda, id_ticket }),
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          mostrarDetalle(data.data);
-        }
-      } catch (_) {
-        // silencioso — ya están en la lista, el detalle falló por red
-      }
-    }
+function goSearch() {
+  setMode('view-search');
+}
 
-    // ── CONSULTA PRINCIPAL ───────────────────────────────────────
-    async function consultar() {
-      const dni    = document.getElementById('inp-dni').value.trim();
-      const ticket = document.getElementById('inp-ticket').value.trim();
+$('query-form').addEventListener('submit', consultar);
+$('btn-new-search').addEventListener('click', goSearch);
+$('btn-empty-retry').addEventListener('click', goSearch);
+$('btn-nueva-consulta').addEventListener('click', goSearch);
+$('header-back').addEventListener('click', goSearch);
+$('close-results').addEventListener('click', goSearch);
 
-      // Resetear errores
-      ['inp-dni','inp-ticket'].forEach(id => {
-        document.getElementById(id).classList.remove('error');
-      });
-      ['err-dni','err-ticket'].forEach(id => {
-        document.getElementById(id).classList.remove('visible');
-      });
+$('inp-dni').addEventListener('input', function onDniInput() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 8);
+});
 
-      // Validar DNI
-      if (!DNI_RE.test(dni)) {
-        document.getElementById('inp-dni').classList.add('error');
-        document.getElementById('err-dni').classList.add('visible');
-        document.getElementById('inp-dni').focus();
-        return;
-      }
+$('inp-ticket').addEventListener('input', function onTicketInput() {
+  this.value = this.value.toUpperCase().replace(/\s/g, '').slice(0, 36);
+});
 
-      // Validar formato UUID si se ingresó ticket
-      if (ticket && !UUID_RE.test(ticket)) {
-        document.getElementById('inp-ticket').classList.add('error');
-        document.getElementById('err-ticket').classList.add('visible');
-        document.getElementById('inp-ticket').focus();
-        return;
-      }
-
-      limpiarResultados();
-      setLoading(true);
-      dniBusqueda = dni;
-
-      try {
-        if (ticket) {
-          // ── POST /consulta: FEAT01 seguridad — valida DNI + ticket juntos
-          const res  = await fetch('/api/tickets/consulta', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dni, id_ticket: ticket }),
-          });
-          const data = await res.json();
-
-          if (!res.ok || !data.success) {
-            mostrarError(
-              'No encontramos tu ticket',
-              data.message || 'Verifica tu DNI y número de ticket.'
-            );
-          } else {
-            mostrarDetalle(data.data);
-          }
-
-        } else {
-          // ── GET /dni/:dni: lista todos los tickets de ese DNI
-          const res  = await fetch(`/api/tickets/dni/${encodeURIComponent(dni)}`);
-          const data = await res.json();
-
-          if (!res.ok || !data.success) {
-            mostrarError('Error al consultar', 'Hubo un problema. Intenta más tarde.');
-          } else if (data.total === 0) {
-            mostrarError(
-              'No encontramos tickets',
-              'No hay tickets asociados a tu DNI. Si dejaste un equipo recientemente, consulta en tienda.'
-            );
-          } else if (data.total === 1) {
-            // Un solo ticket — ir directo al detalle seguro
-            verDetalleDesde(data.data[0].id_ticket);
-          } else {
-            mostrarLista(data.data);
-          }
-        }
-
-      } catch (_) {
-        mostrarError('Sin conexión', 'No se pudo conectar con el servidor. Verifica tu internet.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    // ── EVENTOS ──────────────────────────────────────────────────
-    document.getElementById('btn-consultar').addEventListener('click', consultar);
-    document.getElementById('btn-volver-detalle').addEventListener('click', volverBusqueda);
-    document.getElementById('btn-nueva-consulta').addEventListener('click', volverBusqueda);
-    document.getElementById('btn-volver-detalle').addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        volverBusqueda();
-      }
-    });
-
-    // Enter para consultar
-    ['inp-dni','inp-ticket'].forEach(id => {
-      document.getElementById(id).addEventListener('keydown', e => {
-        if (e.key === 'Enter') consultar();
-      });
-    });
-
-    // Solo dígitos en DNI
-    document.getElementById('inp-dni').addEventListener('input', function () {
-      this.value = this.value.replace(/\D/g, '').slice(0, 8);
-    });
+setMode('view-search');

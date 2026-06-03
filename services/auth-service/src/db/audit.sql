@@ -8,12 +8,15 @@ CREATE TABLE IF NOT EXISTS log_auditoria (
   id_usuario        UUID REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
   accion            VARCHAR(100) NOT NULL,
   entidad_afectada  VARCHAR(50),
-  id_entidad        UUID,
+  id_entidad        TEXT,
   detalle           JSONB DEFAULT '{}',
   ip_origen         VARCHAR(45),
   resultado         VARCHAR(20) CHECK (resultado IN ('Exitoso','Fallido')),
   fecha_hora        TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE log_auditoria
+  ALTER COLUMN id_entidad TYPE TEXT USING id_entidad::TEXT;
 
 -- Índices para consultas del dashboard (FEAT14)
 CREATE INDEX IF NOT EXISTS idx_audit_usuario   ON log_auditoria(id_usuario);

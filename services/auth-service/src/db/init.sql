@@ -83,6 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_productos_serie ON productos(numero_serie);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS tickets (
   id_ticket               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo_ticket           VARCHAR(20),
   id_cliente              UUID NOT NULL REFERENCES clientes(id_cliente)  ON DELETE RESTRICT,
   id_producto             UUID NOT NULL REFERENCES productos(id_producto) ON DELETE RESTRICT,
   id_tecnico              UUID REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
@@ -101,7 +102,30 @@ CREATE TABLE IF NOT EXISTS tickets (
   creado_por              UUID REFERENCES usuarios(id_usuario) ON DELETE SET NULL
 );
 
+ALTER TABLE tickets
+  ADD COLUMN IF NOT EXISTS codigo_ticket VARCHAR(20);
+
+WITH tickets_sin_codigo AS (
+  SELECT
+    id_ticket,
+    EXTRACT(YEAR FROM fecha_ingreso)::INT AS anio,
+    ROW_NUMBER() OVER (
+      PARTITION BY EXTRACT(YEAR FROM fecha_ingreso)::INT
+      ORDER BY id_ticket::TEXT
+    ) AS correlativo
+  FROM tickets
+  WHERE codigo_ticket IS NULL
+)
+UPDATE tickets t
+SET codigo_ticket =
+  'TK-' || tickets_sin_codigo.anio || '-' || LPAD(tickets_sin_codigo.correlativo::TEXT, 3, '0')
+FROM tickets_sin_codigo
+WHERE t.id_ticket = tickets_sin_codigo.id_ticket;
+
 CREATE INDEX IF NOT EXISTS idx_tickets_cliente  ON tickets(id_cliente);
 CREATE INDEX IF NOT EXISTS idx_tickets_estado   ON tickets(estado);
 CREATE INDEX IF NOT EXISTS idx_tickets_tecnico  ON tickets(id_tecnico);
 CREATE INDEX IF NOT EXISTS idx_tickets_ingreso  ON tickets(fecha_ingreso DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tickets_codigo_ticket
+  ON tickets(codigo_ticket)
+  WHERE codigo_ticket IS NOT NULL;

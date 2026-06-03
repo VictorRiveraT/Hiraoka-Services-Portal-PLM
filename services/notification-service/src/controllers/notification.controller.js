@@ -1,20 +1,25 @@
 const emailProvider = require('../providers/emailProvider');
 
 const TIPOS_VALIDOS = [
-  'ticket_recibido',
-  'en_diagnostico',
-  'en_reparacion',
+  'estado_cambiado',
   'listo_retiro',
   'entregado',
 ];
 
 const sendNotification = async (req, res) => {
-  const { tipo, canal, destinatario, datos } = req.body;
+  const {
+    id_ticket,
+    tipo,
+    canal,
+    destinatario,
+    email,
+    datos = {},
+  } = req.body;
 
-  if (!tipo || !canal || !destinatario || !datos) {
+  if (!id_ticket || !tipo || !canal) {
     return res.status(400).json({
       success: false,
-      message: 'Faltan campos requeridos: tipo, canal, destinatario, datos.',
+      message: 'Faltan campos requeridos: id_ticket, tipo, canal.',
     });
   }
 
@@ -25,17 +30,39 @@ const sendNotification = async (req, res) => {
     });
   }
 
-  try {
-    let result;
+  if (canal !== 'email') {
+    return res.status(400).json({
+      success: false,
+      message: `Canal no soportado: ${canal}. Canales disponibles: email`,
+    });
+  }
 
-    if (canal === 'email') {
-      result = await emailProvider.send({ tipo, destinatario, datos });
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: `Canal no soportado: ${canal}. Canales disponibles: email`,
-      });
-    }
+  const destinatarioEmail =
+    destinatario || email || datos.destinatario || datos.email_cliente;
+
+  if (!destinatarioEmail) {
+    return res.status(400).json({
+      success: false,
+      message: 'Se requiere destinatario o email para enviar por canal email.',
+    });
+  }
+
+  try {
+    const variables = {
+      ...datos,
+      id_ticket,
+      ticket: datos.ticket || datos.codigo_ticket || id_ticket,
+      nombre: datos.nombre || datos.nombre_cliente || 'Cliente',
+      estado: datos.estado || datos.estado_nuevo || 'Actualizado',
+      fecha: datos.fecha || datos.fecha_estimada || datos.fecha_estimada_entrega || 'Por confirmar',
+      portal_url: datos.portal_url || process.env.PORTAL_URL || 'http://localhost',
+    };
+
+    const result = await emailProvider.send({
+      tipo,
+      destinatario: destinatarioEmail,
+      datos: variables,
+    });
 
     return res.status(200).json({
       success: true,

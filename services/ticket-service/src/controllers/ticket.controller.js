@@ -4,15 +4,45 @@ const {
   ESTADOS,
   esEstadoValido,
   esTransicionValida,
+  obtenerSiguientesEstados,
   describirTransicion,
 } = require("../services/estadoService");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CODIGO_TICKET_REGEX = /^TK-\d{4}-\d{3,}$/i;
+const NOTIFICATION_SERVICE_URL =
+  process.env.NOTIFICATION_SERVICE_URL || "http://notification-service:3004";
+const NOTIFICATION_TIMEOUT_MS = Number(process.env.NOTIFICATION_TIMEOUT_MS || 3000);
 
 const normalizarUuid = (value) => String(value || "").toLowerCase();
 
 const esUuidValido = (value) => UUID_REGEX.test(String(value || ""));
+
+const normalizarCodigoTicket = (value) => String(value || "").trim().toUpperCase();
+
+const esCodigoTicketValido = (value) =>
+  CODIGO_TICKET_REGEX.test(normalizarCodigoTicket(value));
+
+const getTicketLookup = (value) => ({
+  uuid: esUuidValido(value) ? normalizarUuid(value) : null,
+  codigo: esCodigoTicketValido(value) ? normalizarCodigoTicket(value) : null,
+});
+
+const formatearFecha = (value) => {
+  if (!value) return "Por confirmar";
+  return new Date(value).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getTipoNotificacion = (estado) => {
+  if (estado === "Listo") return "listo_retiro";
+  if (estado === "Entregado") return "entregado";
+  return "estado_cambiado";
+};
 
 const obtenerUsuarioConRol = async (client, idUsuario) => {
   if (!esUuidValido(idUsuario)) {
@@ -40,7 +70,7 @@ const registrarAuditoria = async (
   await client.query(
     `INSERT INTO log_auditoria
       (id_usuario, accion, entidad_afectada, id_entidad, detalle, ip_origen, resultado)
-     VALUES ($1, $2, 'tickets', $3, $4::jsonb, $5, $6)`,
+     VALUES ($1, $2, 'tickets', $3::text, $4::jsonb, $5, $6)`,
     [
       idUsuario,
       accion,
@@ -52,14 +82,71 @@ const registrarAuditoria = async (
   );
 };
 
+const registrarAuditoriaIndependiente = async (payload) => {
+  const client = await pool.connect();
+  try {
+    await registrarAuditoria(client, payload);
+  } finally {
+    client.release();
+  }
+};
+
+const enviarNotificacionCambioEstado = async (ticket, estadoNuevo) => {
+  if (!ticket.email_cliente) {
+    throw new Error("El cliente no tiene email registrado.");
+  }
+
+  const producto = [ticket.producto, ticket.marca, ticket.modelo]
+    .filter(Boolean)
+    .join(" ");
+  const fecha =
+    estadoNuevo === "Entregado"
+      ? formatearFecha(ticket.fecha_entrega_real)
+      : formatearFecha(ticket.fecha_estimada_entrega);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), NOTIFICATION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${NOTIFICATION_SERVICE_URL}/notifications/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        id_ticket: ticket.codigo_ticket || ticket.id_ticket,
+        tipo: getTipoNotificacion(estadoNuevo),
+        canal: "email",
+        destinatario: ticket.email_cliente,
+        datos: {
+          nombre: ticket.nombre_cliente,
+          ticket: ticket.codigo_ticket || ticket.id_ticket,
+          codigo_ticket: ticket.codigo_ticket,
+          estado: estadoNuevo,
+          fecha,
+          producto,
+          numero_serie: ticket.numero_serie,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`notification-service respondio ${response.status}: ${body}`);
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 // GET /tickets/:id - FEAT01: Consulta pública de ticket por ID
 const getTicketById = async (req, res) => {
   const { id } = req.params;
+  const lookup = getTicketLookup(id);
 
-  if (!esUuidValido(id)) {
+  if (!lookup.uuid && !lookup.codigo) {
     return res.status(400).json({
       success: false,
-      message: "El id del ticket no tiene un formato valido.",
+      message: "El ticket debe tener formato UUID o codigo TK-AAAA-000.",
     });
   }
 
@@ -67,6 +154,7 @@ const getTicketById = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         t.id_ticket,
+        t.codigo_ticket,
         t.estado,
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
@@ -77,8 +165,10 @@ const getTicketById = async (req, res) => {
       FROM tickets t
       JOIN clientes c ON t.id_cliente = c.id_cliente
       JOIN productos p ON t.id_producto = p.id_producto
-      WHERE t.id_ticket = $1`,
-      [id]
+      WHERE
+        ($1::uuid IS NOT NULL AND t.id_ticket = $1::uuid)
+        OR ($2::text IS NOT NULL AND t.codigo_ticket = $2)`,
+      [lookup.uuid, lookup.codigo]
     );
 
     if (result.rows.length === 0) {
@@ -109,6 +199,7 @@ const getTicketsByDni = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         t.id_ticket,
+        t.codigo_ticket,
         t.estado,
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
@@ -139,6 +230,7 @@ const getTicketsByDni = async (req, res) => {
 // Body: { dni: "12345678", id_ticket: "uuid-del-ticket" }
 const consultarTicketSeguro = async (req, res) => {
   const { dni, id_ticket } = req.body;
+  const lookup = getTicketLookup(id_ticket);
 
   // ── Validación de campos obligatorios
   if (!dni || !id_ticket) {
@@ -157,13 +249,11 @@ const consultarTicketSeguro = async (req, res) => {
     });
   }
 
-  // ── Validación de formato UUID
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(id_ticket)) {
+  // ── Validacion de formato UUID interno o codigo publico TK-AAAA-000
+  if (!lookup.uuid && !lookup.codigo) {
     return res.status(400).json({
       success: false,
-      message: "El id_ticket no tiene un formato válido.",
+      message: "El id_ticket debe tener formato UUID o codigo TK-AAAA-000.",
     });
   }
 
@@ -172,6 +262,7 @@ const consultarTicketSeguro = async (req, res) => {
     const result = await pool.query(
       `SELECT
         t.id_ticket,
+        t.codigo_ticket,
         t.estado,
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
@@ -185,9 +276,12 @@ const consultarTicketSeguro = async (req, res) => {
       FROM tickets t
       JOIN clientes c ON t.id_cliente = c.id_cliente
       JOIN productos p ON t.id_producto = p.id_producto
-      WHERE t.id_ticket = $1
-        AND c.dni = $2`,
-      [id_ticket, dni]
+      WHERE (
+          ($1::uuid IS NOT NULL AND t.id_ticket = $1::uuid)
+          OR ($2::text IS NOT NULL AND t.codigo_ticket = $2)
+        )
+        AND c.dni = $3`,
+      [lookup.uuid, lookup.codigo, dni]
     );
 
     // ── Sin resultado: el ticket no existe O el DNI no corresponde a ese ticket
@@ -210,6 +304,67 @@ const consultarTicketSeguro = async (req, res) => {
       success: false,
       message: "Error interno del servidor",
     });
+  }
+};
+
+// GET /tickets/tecnico/mis-tickets - Lista tickets asignados al tecnico autenticado
+const getTicketsAsignadosTecnico = async (req, res) => {
+  const idUsuario = req.user && req.user.id_usuario;
+
+  let client;
+  try {
+    client = await pool.connect();
+
+    const usuario = await obtenerUsuarioConRol(client, idUsuario);
+    if (!usuario || !usuario.activo || usuario.rol !== "Tecnico") {
+      return res.status(403).json({
+        success: false,
+        message: "Solo un tecnico activo puede ver sus tickets asignados.",
+      });
+    }
+
+    const result = await client.query(
+      `SELECT
+        t.id_ticket,
+        t.codigo_ticket,
+        t.estado,
+        t.fecha_ingreso,
+        t.fecha_estimada_entrega,
+        t.descripcion_problema,
+        c.nombre AS cliente,
+        c.dni AS dni_cliente,
+        p.nombre AS producto,
+        p.marca,
+        p.modelo,
+        p.numero_serie
+       FROM tickets t
+       JOIN clientes c ON t.id_cliente = c.id_cliente
+       JOIN productos p ON t.id_producto = p.id_producto
+       WHERE t.id_tecnico = $1
+       ORDER BY t.fecha_ingreso DESC`,
+      [idUsuario]
+    );
+
+    const data = result.rows.map((ticket) => ({
+      ...ticket,
+      siguientes_estados: obtenerSiguientesEstados(ticket.estado),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data,
+      total: data.length,
+    });
+  } catch (error) {
+    console.error("Error al listar tickets asignados al tecnico:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor",
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 };
 
@@ -257,9 +412,22 @@ const actualizarEstadoTicket = async (req, res) => {
     }
 
     const ticketResult = await client.query(
-      `SELECT id_ticket, id_tecnico, estado
-       FROM tickets
-       WHERE id_ticket = $1
+      `SELECT
+        t.id_ticket,
+        t.codigo_ticket,
+        t.id_tecnico,
+        t.estado,
+        t.fecha_estimada_entrega,
+        c.nombre AS nombre_cliente,
+        c.email AS email_cliente,
+        p.nombre AS producto,
+        p.marca,
+        p.modelo,
+        p.numero_serie
+       FROM tickets t
+       JOIN clientes c ON t.id_cliente = c.id_cliente
+       JOIN productos p ON t.id_producto = p.id_producto
+       WHERE t.id_ticket = $1
        FOR UPDATE`,
       [id]
     );
@@ -304,13 +472,13 @@ const actualizarEstadoTicket = async (req, res) => {
     const updateResult = await client.query(
       `UPDATE tickets
        SET
-        estado = $1,
+        estado = $1::varchar(20),
         fecha_entrega_real = CASE
-          WHEN $1 = 'Entregado' THEN COALESCE(fecha_entrega_real, NOW())
+          WHEN $1::varchar(20) = 'Entregado' THEN COALESCE(fecha_entrega_real, NOW())
           ELSE fecha_entrega_real
-        END
+       END
        WHERE id_ticket = $2
-       RETURNING id_ticket, id_tecnico, estado, fecha_entrega_real`,
+       RETURNING id_ticket, codigo_ticket, id_tecnico, estado, fecha_entrega_real`,
       [estado, id]
     );
 
@@ -328,10 +496,41 @@ const actualizarEstadoTicket = async (req, res) => {
 
     await client.query("COMMIT");
 
+    const ticketActualizado = {
+      ...ticket,
+      ...updateResult.rows[0],
+    };
+
+    try {
+      await enviarNotificacionCambioEstado(ticketActualizado, estado);
+    } catch (notificationError) {
+      console.error(
+        "Error al disparar notificacion de cambio de estado:",
+        notificationError
+      );
+
+      try {
+        await registrarAuditoriaIndependiente({
+          idUsuario,
+          accion: "Fallo de Notificacion de Ticket",
+          idEntidad: id,
+          detalle: {
+            ticket: ticketActualizado.codigo_ticket || id,
+            estado_nuevo: estado,
+            error: notificationError.message,
+          },
+          ip: req.ip,
+          resultado: "Fallido",
+        });
+      } catch (auditError) {
+        console.error("Error al registrar auditoria de notificacion:", auditError);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: "Estado del ticket actualizado correctamente.",
-      data: updateResult.rows[0],
+      data: ticketActualizado,
     });
   } catch (error) {
     if (client) {
@@ -462,6 +661,7 @@ module.exports = {
   getTicketById,
   getTicketsByDni,
   consultarTicketSeguro,
+  getTicketsAsignadosTecnico,
   actualizarEstadoTicket,
   asignarTecnicoTicket,
 };

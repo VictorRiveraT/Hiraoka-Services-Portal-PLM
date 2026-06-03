@@ -4,6 +4,7 @@ const {
   getTicketById,
   getTicketsByDni,
   consultarTicketSeguro,
+  getTicketsAsignadosTecnico,
   actualizarEstadoTicket,
   asignarTecnicoTicket,
 } = require("../controllers/ticket.controller");
@@ -16,6 +17,9 @@ router.post("/consulta", consultarTicketSeguro);
 
 // GET /tickets/dni/:dni — Consulta todos los tickets de un cliente por DNI
 router.get("/dni/:dni", validateDni, getTicketsByDni);
+
+// GET /tickets/tecnico/mis-tickets — Panel tecnico: tickets asignados
+router.get("/tecnico/mis-tickets", verifyToken, getTicketsAsignadosTecnico);
 
 // PUT /tickets/:id/estado — Tecnico asignado actualiza estado del ticket
 router.put("/:id/estado", verifyToken, actualizarEstadoTicket);

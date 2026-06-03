@@ -1,11 +1,15 @@
 const jwt = require('jsonwebtoken');
 
+const JWT_PARTS = 3;
+
 module.exports = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // formato: "Bearer <token>"
+  const token = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : null;
 
-  if (!token) {
-    return res.status(401).json({ error: 'Token de acceso requerido.' });
+  if (!token || token.split('.').length !== JWT_PARTS) {
+    return res.status(401).json({ error: 'Token invalido o malformado.' });
   }
 
   try {
@@ -14,8 +18,9 @@ module.exports = (req, res, next) => {
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Sesión expirada. Inicia sesión nuevamente.' });
+      return res.status(401).json({ error: 'Sesion expirada. Inicia sesion nuevamente.' });
     }
-    return res.status(403).json({ error: 'Token inválido.' });
+
+    return res.status(401).json({ error: 'Token invalido o malformado.' });
   }
 };
