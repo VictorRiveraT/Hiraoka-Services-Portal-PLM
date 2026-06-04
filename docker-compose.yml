@@ -9,27 +9,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-       - postgres_data:/var/lib/postgresql/data
-       - ./services/auth-service/src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-       - ./services/auth-service/src/db/audit.sql:/docker-entrypoint-initdb.d/02_audit.sql:ro
-       - ./services/auth-service/src/db/seed.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
-    networks:
-      - hiraoka_network
-
-  db-seed:
-    image: postgres:16-alpine
-    container_name: hiraoka_db_seed
-    restart: "no"
-    environment:
-      PGPASSWORD: ${DB_PASSWORD}
-    depends_on:
-      - postgres
-    volumes:
-      - ./services/auth-service/src/db:/db:ro
-    command: >
-      sh -c "until pg_isready -h postgres -U ${DB_USER} -d ${DB_NAME}; do sleep 1; done;
-      psql -h postgres -U ${DB_USER} -d ${DB_NAME} -v ON_ERROR_STOP=1
-      -f /db/init.sql -f /db/audit.sql -f /db/seed.sql"
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/auth-service/src/db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./services/auth-service/src/db/audit.sql:/docker-entrypoint-initdb.d/02_audit.sql:ro
     networks:
       - hiraoka_network
 
@@ -38,19 +20,16 @@ services:
     container_name: hiraoka_auth
     restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${AUTH_SERVICE_PORT:-3001}
+      - NODE_ENV=development
+      - PORT=3001
       - DB_HOST=postgres
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION:-30m}
+      - JWT_EXPIRATION=30m
     depends_on:
-      postgres:
-        condition: service_started
-      db-seed:
-        condition: service_completed_successfully
+      - postgres
     networks:
       - hiraoka_network
 
@@ -64,12 +43,12 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:3001
       - TICKET_SERVICE_URL=http://ticket-service:3002
       - TALLER_SERVICE_URL=http://taller-service:3003
-      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
+      - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
     depends_on:
       - auth-service
       - ticket-service
       - taller-service
-      - notification-service
+      - legacy-service
     networks:
       - hiraoka_network
 
@@ -78,21 +57,14 @@ services:
     container_name: hiraoka_ticket
     restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - PORT=${TICKET_SERVICE_PORT:-3002}
+      - NODE_ENV=development
+      - PORT=3002
       - DB_HOST=postgres
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
-      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
-      - NOTIFICATION_TIMEOUT_MS=${NOTIFICATION_TIMEOUT_MS:-3000}
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80}
     depends_on:
-      postgres:
-        condition: service_started
-      db-seed:
-        condition: service_completed_successfully
+      - postgres
     networks:
       - hiraoka_network
 
@@ -116,35 +88,26 @@ services:
       container_name: hiraoka_taller
       restart: unless-stopped
       environment:
-        - NODE_ENV=${NODE_ENV:-development}
-        - PORT=${TALLER_SERVICE_PORT:-3003}
+        - NODE_ENV=development
+        - PORT=3003
         - DB_HOST=postgres
         - DB_USER=${DB_USER}
         - DB_PASSWORD=${DB_PASSWORD}
         - DB_NAME=${DB_NAME}
         - JWT_SECRET=${JWT_SECRET}
-        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80}
       depends_on:
-        postgres:
-          condition: service_started
-        db-seed:
-          condition: service_completed_successfully
+        - postgres
       networks:
         - hiraoka_network
 
-  notification-service:
-      build: ./services/notification-service
-      container_name: hiraoka_notification
+  legacy-service:
+      build: ./services/legacy-service
+      container_name: hiraoka_legacy
       restart: unless-stopped
       environment:
         - NODE_ENV=${NODE_ENV:-development}
-        - PORT=${NOTIFICATION_SERVICE_PORT:-3004}
-        - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-        - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}
-        - PORTAL_URL=${PORTAL_URL:-http://localhost}
-        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://localhost:80}
-      depends_on:
-        - postgres
+        - PORT=3005
+        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
       networks:
         - hiraoka_network
 
