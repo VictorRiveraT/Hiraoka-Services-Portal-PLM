@@ -32,9 +32,9 @@ Desarrollado como proyecto universitario en la Universidad Peruana Cayetano Here
 | FEAT07 | Historial de vida del producto por número de serie | Pendiente |
 | FEAT08 | Control de acceso granular por roles (RBAC) | En progreso |
 | FEAT09 | Autenticación JWT con log de auditoría inalterable | Listo |
-| FEAT10 | Consulta de disponibilidad de repuestos (inventario) | En progreso |
-| FEAT11 | Gestión de asignación de repuestos al ticket | En progreso |
-| FEAT12 | Verificación de cobertura de garantía | En progreso |
+| FEAT10 | Consulta de disponibilidad de repuestos (inventario) | Listo |
+| FEAT11 | Gestión de asignación de repuestos al ticket | Listo |
+| FEAT12 | Verificación de cobertura de garantía | Listo |
 | FEAT13 | Gestión de flujo de estados del ticket | Listo |
 | FEAT14 | Dashboard gerencial con métricas KPI | Pendiente |
 | FEAT15 | Encuesta de satisfacción NPS post-servicio | Pendiente |
@@ -223,6 +223,9 @@ Hiraoka-Services-Portal-PLM/
 | GET | `/api/tickets/tecnico/mis-tickets` | Tickets asignados al técnico | Si |
 | PUT | `/api/tickets/:id/estado` | Actualizar estado del ticket | Si |
 | POST | `/api/tickets/:id/asignar` | Asignar técnico al ticket | Si |
+| GET | `/api/tickets/:id/repuestos` | Consultar repuestos compatibles/asignados y disponibilidad | No |
+| POST | `/api/tickets/:id/repuestos` | Asignar repuestos al ticket y descontar stock legacy | Si (Tecnico/Agente) |
+| GET | `/api/tickets/:id/garantia` | Verificar cobertura de garantía del producto | No |
 
 ### Notification Service (`/api/notifications`)
 

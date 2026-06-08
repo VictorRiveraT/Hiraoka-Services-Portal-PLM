@@ -7,13 +7,29 @@ const {
   obtenerSiguientesEstados,
   describirTransicion,
 } = require("../services/estadoService");
+const {
+  LegacyServiceError,
+  assignSparePartsToTicket,
+  getInventory,
+  getSparePartsByTicket,
+  getWarranty,
+} = require("../services/legacyClient");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CODIGO_TICKET_REGEX = /^TK-\d{4}-\d{3,}$/i;
+const CODIGO_REPUESTO_REGEX = /^REP-\d{3,}$/i;
 const NOTIFICATION_SERVICE_URL =
   process.env.NOTIFICATION_SERVICE_URL || "http://notification-service:3004";
 const NOTIFICATION_TIMEOUT_MS = Number(process.env.NOTIFICATION_TIMEOUT_MS || 3000);
+const ROLES_REPUESTOS = ["Tecnico", "Agente"];
+const REPUESTOS_COMPATIBLES = {
+  laptop: ["REP-006", "REP-007", "REP-008"],
+  smartphone: ["REP-001", "REP-009", "REP-010"],
+  tablet: ["REP-011", "REP-012"],
+  lavadora: ["REP-003", "REP-013", "REP-014"],
+  televisor: ["REP-005", "REP-015", "REP-016"],
+};
 
 const normalizarUuid = (value) => String(value || "").toLowerCase();
 
@@ -24,10 +40,128 @@ const normalizarCodigoTicket = (value) => String(value || "").trim().toUpperCase
 const esCodigoTicketValido = (value) =>
   CODIGO_TICKET_REGEX.test(normalizarCodigoTicket(value));
 
+const normalizarCodigoRepuesto = (value) => String(value || "").trim().toUpperCase();
+
+const esCodigoRepuestoValido = (value) =>
+  CODIGO_REPUESTO_REGEX.test(normalizarCodigoRepuesto(value));
+
 const getTicketLookup = (value) => ({
   uuid: esUuidValido(value) ? normalizarUuid(value) : null,
   codigo: esCodigoTicketValido(value) ? normalizarCodigoTicket(value) : null,
 });
+
+const resumenTicket = (ticket) => ({
+  id_ticket: ticket.id_ticket,
+  codigo_ticket: ticket.codigo_ticket,
+  estado: ticket.estado,
+  producto: [ticket.producto, ticket.marca, ticket.modelo]
+    .filter(Boolean)
+    .join(" "),
+  numero_serie: ticket.numero_serie,
+});
+
+const normalizarRepuestosPayload = (body) => {
+  const items = Array.isArray(body && body.repuestos)
+    ? body.repuestos
+    : body && body.codigo
+      ? [body]
+      : [];
+
+  if (!items.length) {
+    return {
+      error:
+        "Se requiere un repuesto en { codigo, cantidad } o una lista en { repuestos: [...] }.",
+    };
+  }
+
+  const repuestos = [];
+  for (const item of items) {
+    const codigo = normalizarCodigoRepuesto(item.codigo);
+    const cantidad = Number(item.cantidad);
+
+    if (!esCodigoRepuestoValido(codigo)) {
+      return {
+        error: "Cada repuesto debe tener un codigo valido con formato REP-000.",
+      };
+    }
+
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+      return {
+        error: "Cada repuesto debe tener una cantidad entera mayor a cero.",
+      };
+    }
+
+    repuestos.push({ codigo, cantidad });
+  }
+
+  return { repuestos };
+};
+
+const obtenerCodigosCompatibles = (ticket) => {
+  const texto = [ticket.producto, ticket.marca, ticket.modelo]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (texto.includes("laptop") || texto.includes("dell")) {
+    return REPUESTOS_COMPATIBLES.laptop;
+  }
+  if (texto.includes("smartphone") || texto.includes("galaxy")) {
+    return REPUESTOS_COMPATIBLES.smartphone;
+  }
+  if (texto.includes("tablet") || texto.includes("ipad")) {
+    return REPUESTOS_COMPATIBLES.tablet;
+  }
+  if (texto.includes("lavadora") || texto.includes("wm3600")) {
+    return REPUESTOS_COMPATIBLES.lavadora;
+  }
+  if (texto.includes("televisor") || texto.includes("bravia")) {
+    return REPUESTOS_COMPATIBLES.televisor;
+  }
+
+  return [];
+};
+
+const obtenerTicketParaIntegracion = async (db, id) => {
+  const lookup = getTicketLookup(id);
+
+  const result = await db.query(
+    `SELECT
+      t.id_ticket,
+      t.codigo_ticket,
+      t.estado,
+      t.id_tecnico,
+      p.nombre AS producto,
+      p.marca,
+      p.modelo,
+      p.numero_serie
+     FROM tickets t
+     JOIN productos p ON t.id_producto = p.id_producto
+     WHERE
+      ($1::uuid IS NOT NULL AND t.id_ticket = $1::uuid)
+      OR ($2::text IS NOT NULL AND t.codigo_ticket = $2)`,
+    [lookup.uuid, lookup.codigo]
+  );
+
+  return result.rows[0] || null;
+};
+
+const responderErrorLegacy = (res, error) => {
+  if (error instanceof LegacyServiceError) {
+    return res.status(error.status).json({
+      success: false,
+      message: error.message,
+      code: error.code,
+      details: error.details,
+    });
+  }
+
+  console.error("Error no controlado al integrar con legacy-service:", error);
+  return res.status(500).json({
+    success: false,
+    message: "Error interno del servidor",
+  });
+};
 
 const formatearFecha = (value) => {
   if (!value) return "Por confirmar";
@@ -304,6 +438,211 @@ const consultarTicketSeguro = async (req, res) => {
       success: false,
       message: "Error interno del servidor",
     });
+  }
+};
+
+// GET /tickets/:id/repuestos - FEAT10: Consulta repuestos compatibles/asignados
+const consultarRepuestosTicket = async (req, res) => {
+  const { id } = req.params;
+  const codigo = req.query.codigo
+    ? normalizarCodigoRepuesto(req.query.codigo)
+    : null;
+  const lookup = getTicketLookup(id);
+
+  if (!lookup.uuid && !lookup.codigo) {
+    return res.status(400).json({
+      success: false,
+      message: "El ticket debe tener formato UUID o codigo TK-AAAA-000.",
+    });
+  }
+
+  if (codigo && !esCodigoRepuestoValido(codigo)) {
+    return res.status(400).json({
+      success: false,
+      message: "El codigo de repuesto debe tener formato REP-000.",
+    });
+  }
+
+  try {
+    const ticket = await obtenerTicketParaIntegracion(pool, id);
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket no encontrado",
+      });
+    }
+
+    if (codigo) {
+      const inventario = await getInventory(codigo);
+      return res.status(200).json({
+        success: true,
+        data: {
+          ticket: resumenTicket(ticket),
+          disponibilidad: inventario.data,
+        },
+      });
+    }
+
+    const codigosCompatibles = obtenerCodigosCompatibles(ticket);
+    const [asignados, disponibilidad] = await Promise.all([
+      getSparePartsByTicket(ticket.id_ticket),
+      Promise.all(codigosCompatibles.map((item) => getInventory(item))),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ticket: resumenTicket(ticket),
+        repuestos_asignados: asignados.data || [],
+        total_asignados: asignados.total || 0,
+        disponibilidad: disponibilidad.map((item) => item.data),
+      },
+    });
+  } catch (error) {
+    return responderErrorLegacy(res, error);
+  }
+};
+
+// POST /tickets/:id/repuestos - FEAT11: Asigna repuestos y descuenta stock legacy
+const asignarRepuestosTicket = async (req, res) => {
+  const { id } = req.params;
+  const idUsuario = req.user && req.user.id_usuario;
+  const lookup = getTicketLookup(id);
+  const { repuestos, error: payloadError } = normalizarRepuestosPayload(req.body);
+
+  if (!lookup.uuid && !lookup.codigo) {
+    return res.status(400).json({
+      success: false,
+      message: "El ticket debe tener formato UUID o codigo TK-AAAA-000.",
+    });
+  }
+
+  if (payloadError) {
+    return res.status(400).json({
+      success: false,
+      message: payloadError,
+    });
+  }
+
+  let usuario;
+  let ticket;
+  let client;
+
+  try {
+    client = await pool.connect();
+
+    usuario = await obtenerUsuarioConRol(client, idUsuario);
+    if (
+      !usuario ||
+      !usuario.activo ||
+      !ROLES_REPUESTOS.includes(usuario.rol)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Solo Tecnico y Agente pueden asignar repuestos.",
+      });
+    }
+
+    ticket = await obtenerTicketParaIntegracion(client, id);
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket no encontrado",
+      });
+    }
+  } catch (error) {
+    console.error("Error al preparar asignacion de repuestos:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor",
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+
+  try {
+    const legacyResult = await assignSparePartsToTicket(ticket.id_ticket, {
+      repuestos,
+      asignado_por: idUsuario,
+      rol: usuario.rol,
+    });
+
+    await registrarAuditoriaIndependiente({
+      idUsuario,
+      accion: "Asignacion de Repuestos a Ticket",
+      idEntidad: ticket.id_ticket,
+      detalle: {
+        ticket: ticket.codigo_ticket,
+        repuestos,
+        legacy: legacyResult.data,
+      },
+      ip: req.ip,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Repuestos asignados al ticket correctamente.",
+      data: {
+        ticket: resumenTicket(ticket),
+        asignacion: legacyResult.data,
+      },
+    });
+  } catch (error) {
+    try {
+      await registrarAuditoriaIndependiente({
+        idUsuario,
+        accion: "Asignacion de Repuestos a Ticket",
+        idEntidad: ticket && ticket.id_ticket,
+        detalle: {
+          ticket: ticket && ticket.codigo_ticket,
+          repuestos,
+          error: error.message,
+          code: error.code,
+        },
+        ip: req.ip,
+        resultado: "Fallido",
+      });
+    } catch (auditError) {
+      console.error("Error al auditar fallo de repuestos:", auditError);
+    }
+
+    return responderErrorLegacy(res, error);
+  }
+};
+
+// GET /tickets/:id/garantia - FEAT12: Verifica cobertura via legacy-service
+const consultarGarantiaTicket = async (req, res) => {
+  const { id } = req.params;
+  const lookup = getTicketLookup(id);
+
+  if (!lookup.uuid && !lookup.codigo) {
+    return res.status(400).json({
+      success: false,
+      message: "El ticket debe tener formato UUID o codigo TK-AAAA-000.",
+    });
+  }
+
+  try {
+    const ticket = await obtenerTicketParaIntegracion(pool, id);
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: "Ticket no encontrado",
+      });
+    }
+
+    const garantia = await getWarranty(ticket.numero_serie);
+    return res.status(200).json({
+      success: true,
+      data: {
+        ticket: resumenTicket(ticket),
+        garantia: garantia.data,
+      },
+    });
+  } catch (error) {
+    return responderErrorLegacy(res, error);
   }
 };
 
@@ -661,6 +1000,9 @@ module.exports = {
   getTicketById,
   getTicketsByDni,
   consultarTicketSeguro,
+  consultarRepuestosTicket,
+  asignarRepuestosTicket,
+  consultarGarantiaTicket,
   getTicketsAsignadosTecnico,
   actualizarEstadoTicket,
   asignarTecnicoTicket,

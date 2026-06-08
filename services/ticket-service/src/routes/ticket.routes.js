@@ -4,6 +4,9 @@ const {
   getTicketById,
   getTicketsByDni,
   consultarTicketSeguro,
+  consultarRepuestosTicket,
+  asignarRepuestosTicket,
+  consultarGarantiaTicket,
   getTicketsAsignadosTecnico,
   actualizarEstadoTicket,
   asignarTecnicoTicket,
@@ -26,6 +29,15 @@ router.put("/:id/estado", verifyToken, actualizarEstadoTicket);
 
 // POST /tickets/:id/asignar — Agente/Admin asigna tecnico al ticket
 router.post("/:id/asignar", verifyToken, asignarTecnicoTicket);
+
+// GET /tickets/:id/repuestos — FEAT10: disponibilidad y repuestos asignados
+router.get("/:id/repuestos", consultarRepuestosTicket);
+
+// POST /tickets/:id/repuestos — FEAT11: asigna repuestos y descuenta stock
+router.post("/:id/repuestos", verifyToken, asignarRepuestosTicket);
+
+// GET /tickets/:id/garantia — FEAT12: cobertura de garantia
+router.get("/:id/garantia", consultarGarantiaTicket);
 
 // GET /tickets/:id — Consulta un ticket por su UUID
 router.get("/:id", getTicketById);
