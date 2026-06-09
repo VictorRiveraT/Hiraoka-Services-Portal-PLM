@@ -17,6 +17,10 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'notification-service' });
 });
 
+app.get('/notifications/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'notification-service' });
+});
+
 app.use('/notifications', notificationRoutes);
 
 app.listen(PORT, () => {

@@ -64,7 +64,11 @@ const send = async ({ tipo, destinatario, datos }) => {
   };
 
   const response = await sgMail.send(msg);
-  return { status: response[0].statusCode, message: 'Email enviado via SendGrid' };
+  return {
+    status: response[0].statusCode,
+    message: 'Email enviado via SendGrid',
+    message_id: response[0].headers && response[0].headers['x-message-id'],
+  };
 };
 
 module.exports = { send };

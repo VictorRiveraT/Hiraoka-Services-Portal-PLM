@@ -5,6 +5,7 @@ const TIPOS_VALIDOS = [
   'listo_retiro',
   'entregado',
 ];
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const sendNotification = async (req, res) => {
   const {
@@ -44,6 +45,13 @@ const sendNotification = async (req, res) => {
     return res.status(400).json({
       success: false,
       message: 'Se requiere destinatario o email para enviar por canal email.',
+    });
+  }
+
+  if (!EMAIL_REGEX.test(String(destinatarioEmail).trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'El destinatario debe tener un formato de email valido.',
     });
   }
 

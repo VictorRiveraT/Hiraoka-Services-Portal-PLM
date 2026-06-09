@@ -41,6 +41,34 @@ app.use('/api/auth', createProxyMiddleware({
   },
 }));
 
+app.use('/api/usuarios', (req, res, next) => {
+  req.url = '/api/auth/usuarios' + req.url;
+  createProxyMiddleware({
+    target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con auth-service:', err.message);
+        res.status(503).json({ error: 'Servicio de autenticacion no disponible.' });
+      },
+    },
+  })(req, res, next);
+});
+
+app.use('/usuarios', (req, res, next) => {
+  req.url = '/api/auth/usuarios' + req.url;
+  createProxyMiddleware({
+    target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con auth-service:', err.message);
+        res.status(503).json({ error: 'Servicio de autenticacion no disponible.' });
+      },
+    },
+  })(req, res, next);
+});
+
 // ── Proxy → Ticket Service ────────────────────────────────────
 app.use('/api/tickets', (req, res, next) => {
   req.url = '/tickets' + req.url;
@@ -56,7 +84,32 @@ app.use('/api/tickets', (req, res, next) => {
   })(req, res, next);
 });
 
+app.use('/api/dashboard', (req, res, next) => {
+  req.url = '/dashboard' + req.url;
+  createProxyMiddleware({
+    target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con ticket-service:', err.message);
+        res.status(503).json({ error: 'Servicio de tickets no disponible.' });
+      },
+    },
+  })(req, res, next);
+});
+
 // Proxy → Taller Service
+app.use('/taller', createProxyMiddleware({
+  target: process.env.TALLER_SERVICE_URL || 'http://taller-service:3003',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error('[GATEWAY] Error al conectar con taller-service:', err.message);
+      res.status(503).json({ error: 'Servicio de taller no disponible.' });
+    },
+  },
+}));
+
 app.use('/api/taller', createProxyMiddleware({
   target: process.env.TALLER_SERVICE_URL || 'http://taller-service:3003',
   changeOrigin: true,
@@ -69,16 +122,19 @@ app.use('/api/taller', createProxyMiddleware({
 }));
 
 // Proxy → Notification Service
-app.use('/api/notifications', createProxyMiddleware({
-  target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004',
-  changeOrigin: true,
-  on: {
-    error: (err, req, res) => {
-      console.error('[GATEWAY] Error al conectar con notification-service:', err.message);
-      res.status(503).json({ error: 'Servicio de notificaciones no disponible.' });
+app.use('/api/notifications', (req, res, next) => {
+  req.url = '/notifications' + req.url;
+  createProxyMiddleware({
+    target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004',
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        console.error('[GATEWAY] Error al conectar con notification-service:', err.message);
+        res.status(503).json({ error: 'Servicio de notificaciones no disponible.' });
+      },
     },
-  },
-}));
+  })(req, res, next);
+});
 
 // Proxy -> Legacy Service (APIs legadas Hiraoka)
 app.use('/api/legacy', createProxyMiddleware({
