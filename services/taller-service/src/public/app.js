@@ -199,7 +199,7 @@ function renderDetail(ticket) {
   document.getElementById('entry-date').textContent = fmtFecha(ticket.fecha_ingreso);
   document.getElementById('assigned-tech').textContent = ticket.tecnico_asignado || 'Jander Huamani';
   document.getElementById('customer-name').textContent = ticket.cliente || '-';
-  document.getElementById('observations').value = ticket.descripcion_problema || '';
+  document.getElementById('observations').value = ticket.observaciones_tecnicas || '';
   renderStateButtons(ticket);
 }
 

@@ -36,6 +36,16 @@ VALUES (
 )
 ON CONFLICT (username) DO NOTHING;
 
+INSERT INTO usuarios (id_usuario, nombre_completo, username, password_hash, id_rol)
+VALUES (
+  'b0000000-0000-0000-0000-000000000001',
+  'Administrador Hiraoka',
+  'admin',
+  '$2b$12$eB6wPhbN48aqwg80ntpA7.PfErQ8ju3i42p/ZHlxypkGtQ1AlE3wa',
+  (SELECT id_rol FROM roles WHERE nombre = 'Administrador' LIMIT 1)
+)
+ON CONFLICT (username) DO NOTHING;
+
 
 -- ============================================================
 -- PRODUCTOS (5)

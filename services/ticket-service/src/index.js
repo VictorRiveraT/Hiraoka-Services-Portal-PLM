@@ -2,6 +2,8 @@
 const express = require("express");
 const cors = require("cors");
 const ticketRoutes = require("./routes/ticket.routes");
+const verifyToken = require("./middleware/verifyToken");
+const { getMetricasDashboard } = require("./controllers/ticket.controller");
 
 const path = require('path');
 
@@ -54,6 +56,7 @@ app.get("/health", (req, res) => {
 });
 
 // Rutas
+app.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
 app.use("/tickets", ticketRoutes);
 
 app.listen(PORT, () => {

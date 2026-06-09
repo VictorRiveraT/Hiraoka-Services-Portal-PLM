@@ -178,6 +178,17 @@ const getTipoNotificacion = (estado) => {
   return "estado_cambiado";
 };
 
+const parsePeriodo = (query) => {
+  const desde = query.desde ? new Date(query.desde) : new Date("1970-01-01T00:00:00.000Z");
+  const hasta = query.hasta ? new Date(query.hasta) : new Date();
+
+  if (Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime()) || desde > hasta) {
+    return { error: "El periodo debe usar fechas validas en desde/hasta." };
+  }
+
+  return { desde, hasta };
+};
+
 const obtenerUsuarioConRol = async (client, idUsuario) => {
   if (!esUuidValido(idUsuario)) {
     return null;
@@ -267,6 +278,11 @@ const enviarNotificacionCambioEstado = async (ticket, estadoNuevo) => {
       const body = await response.text();
       throw new Error(`notification-service respondio ${response.status}: ${body}`);
     }
+
+    return response.json().catch(() => ({
+      success: true,
+      message: "Notificacion aceptada por notification-service.",
+    }));
   } finally {
     clearTimeout(timeout);
   }
@@ -670,6 +686,8 @@ const getTicketsAsignadosTecnico = async (req, res) => {
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
         t.descripcion_problema,
+        t.observaciones_tecnicas,
+        t.evidencias_tecnicas,
         c.nombre AS cliente,
         c.dni AS dni_cliente,
         p.nombre AS producto,
@@ -711,7 +729,7 @@ const getTicketsAsignadosTecnico = async (req, res) => {
 // Body: { estado: "Diagnosticando" }
 const actualizarEstadoTicket = async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, observaciones } = req.body;
   const idUsuario = req.user && req.user.id_usuario;
 
   if (!esUuidValido(id)) {
@@ -756,6 +774,8 @@ const actualizarEstadoTicket = async (req, res) => {
         t.codigo_ticket,
         t.id_tecnico,
         t.estado,
+        t.observaciones_tecnicas,
+        t.evidencias_tecnicas,
         t.fecha_estimada_entrega,
         c.nombre AS nombre_cliente,
         c.email AS email_cliente,
@@ -812,13 +832,15 @@ const actualizarEstadoTicket = async (req, res) => {
       `UPDATE tickets
        SET
         estado = $1::varchar(20),
+        observaciones_tecnicas = COALESCE(NULLIF($3::text, ''), observaciones_tecnicas),
         fecha_entrega_real = CASE
           WHEN $1::varchar(20) = 'Entregado' THEN COALESCE(fecha_entrega_real, NOW())
           ELSE fecha_entrega_real
        END
        WHERE id_ticket = $2
-       RETURNING id_ticket, codigo_ticket, id_tecnico, estado, fecha_entrega_real`,
-      [estado, id]
+       RETURNING id_ticket, codigo_ticket, id_tecnico, estado, observaciones_tecnicas,
+        evidencias_tecnicas, fecha_entrega_real`,
+      [estado, id, String(observaciones || "").trim()]
     );
 
     await registrarAuditoria(client, {
@@ -829,6 +851,7 @@ const actualizarEstadoTicket = async (req, res) => {
         estado_anterior: ticket.estado,
         estado_nuevo: estado,
         tecnico: idUsuario,
+        observaciones_actualizadas: Boolean(String(observaciones || "").trim()),
       },
       ip: req.ip,
     });
@@ -841,7 +864,22 @@ const actualizarEstadoTicket = async (req, res) => {
     };
 
     try {
-      await enviarNotificacionCambioEstado(ticketActualizado, estado);
+      const notificationResult = await enviarNotificacionCambioEstado(
+        ticketActualizado,
+        estado
+      );
+
+      await registrarAuditoriaIndependiente({
+        idUsuario,
+        accion: "Notificacion de Ticket Enviada",
+        idEntidad: id,
+        detalle: {
+          ticket: ticketActualizado.codigo_ticket || id,
+          estado_nuevo: estado,
+          proveedor: notificationResult.result || notificationResult.message,
+        },
+        ip: req.ip,
+      });
     } catch (notificationError) {
       console.error(
         "Error al disparar notificacion de cambio de estado:",
@@ -996,6 +1034,219 @@ const asignarTecnicoTicket = async (req, res) => {
   }
 };
 
+// GET /tickets/historial/:numero_serie - FEAT07: historial completo del producto
+const getHistorialProducto = async (req, res) => {
+  const numeroSerie = String(req.params.numero_serie || "").trim();
+
+  if (!numeroSerie) {
+    return res.status(400).json({
+      success: false,
+      message: "El numero de serie es requerido.",
+    });
+  }
+
+  try {
+    const ticketsResult = await pool.query(
+      `SELECT
+        t.id_ticket,
+        t.codigo_ticket,
+        t.estado,
+        t.descripcion_problema,
+        t.fecha_ingreso,
+        t.fecha_estimada_entrega,
+        t.fecha_entrega_real,
+        c.nombre AS cliente,
+        p.nombre AS producto,
+        p.marca,
+        p.modelo,
+        p.numero_serie,
+        u.id_usuario AS id_tecnico,
+        u.nombre_completo AS tecnico
+       FROM tickets t
+       JOIN productos p ON t.id_producto = p.id_producto
+       JOIN clientes c ON t.id_cliente = c.id_cliente
+       LEFT JOIN usuarios u ON t.id_tecnico = u.id_usuario
+       WHERE p.numero_serie = $1
+       ORDER BY t.fecha_ingreso ASC`,
+      [numeroSerie]
+    );
+
+    if (!ticketsResult.rowCount) {
+      return res.status(404).json({
+        success: false,
+        message: "No se encontro historial para el numero de serie indicado.",
+      });
+    }
+
+    const ticketIds = ticketsResult.rows.map((ticket) => ticket.id_ticket);
+    const auditoriaResult = await pool.query(
+      `SELECT id_entidad, accion, detalle, fecha_hora
+       FROM log_auditoria
+       WHERE entidad_afectada = 'tickets'
+         AND id_entidad = ANY($1::text[])
+       ORDER BY fecha_hora ASC`,
+      [ticketIds]
+    );
+
+    const eventosPorTicket = new Map();
+    auditoriaResult.rows.forEach((evento) => {
+      const lista = eventosPorTicket.get(evento.id_entidad) || [];
+      lista.push(evento);
+      eventosPorTicket.set(evento.id_entidad, lista);
+    });
+
+    const data = ticketsResult.rows.map((ticket) => {
+      const eventos = eventosPorTicket.get(String(ticket.id_ticket)) || [];
+      const cambiosEstado = eventos
+        .filter((evento) => evento.accion === "Cambio de Estado de Ticket")
+        .map((evento) => ({
+          estado_anterior: evento.detalle && evento.detalle.estado_anterior,
+          estado_nuevo: evento.detalle && evento.detalle.estado_nuevo,
+          fecha_hora: evento.fecha_hora,
+        }));
+
+      const repuestosUsados = eventos
+        .filter((evento) => evento.accion === "Asignacion de Repuestos a Ticket")
+        .flatMap((evento) => {
+          const repuestos = evento.detalle && evento.detalle.repuestos;
+          return Array.isArray(repuestos) ? repuestos : [];
+        });
+
+      const estadosRecorridos = [
+        { estado: "Recibido", fecha_hora: ticket.fecha_ingreso },
+        ...cambiosEstado.map((item) => ({
+          estado: item.estado_nuevo,
+          estado_anterior: item.estado_anterior,
+          fecha_hora: item.fecha_hora,
+        })),
+      ];
+
+      if (!estadosRecorridos.some((item) => item.estado === ticket.estado)) {
+        estadosRecorridos.push({
+          estado: ticket.estado,
+          fecha_hora: ticket.fecha_entrega_real || ticket.fecha_estimada_entrega || ticket.fecha_ingreso,
+          inferido: true,
+        });
+      }
+
+      return {
+        ...ticket,
+        estados_recorridos: estadosRecorridos,
+        repuestos_usados: repuestosUsados,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      numero_serie: numeroSerie,
+      total: data.length,
+      data,
+    });
+  } catch (error) {
+    console.error("Error al consultar historial de producto:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor",
+    });
+  }
+};
+
+// GET /dashboard/metricas - FEAT14: KPIs del periodo solicitado
+const getMetricasDashboard = async (req, res) => {
+  const periodo = parsePeriodo(req.query);
+  if (periodo.error) {
+    return res.status(400).json({
+      success: false,
+      message: periodo.error,
+    });
+  }
+
+  try {
+    const [porEstado, tiempoPromedio, tecnicoTop, nps] = await Promise.all([
+      pool.query(
+        `SELECT estado, COUNT(*)::int AS total
+         FROM tickets
+         WHERE fecha_ingreso BETWEEN $1 AND $2
+         GROUP BY estado
+         ORDER BY estado`,
+        [periodo.desde, periodo.hasta]
+      ),
+      pool.query(
+        `SELECT ROUND(AVG(EXTRACT(EPOCH FROM (fecha_entrega_real - fecha_ingreso)) / 3600)::numeric, 2) AS horas
+         FROM tickets
+         WHERE fecha_entrega_real IS NOT NULL
+           AND fecha_ingreso BETWEEN $1 AND $2`,
+        [periodo.desde, periodo.hasta]
+      ),
+      pool.query(
+        `SELECT
+          u.id_usuario,
+          u.nombre_completo AS tecnico,
+          COUNT(*)::int AS tickets_cerrados
+         FROM tickets t
+         JOIN usuarios u ON t.id_tecnico = u.id_usuario
+         WHERE t.estado = 'Entregado'
+           AND t.fecha_entrega_real BETWEEN $1 AND $2
+         GROUP BY u.id_usuario, u.nombre_completo
+         ORDER BY tickets_cerrados DESC, tecnico ASC
+         LIMIT 1`,
+        [periodo.desde, periodo.hasta]
+      ),
+      pool.query(
+        `SELECT to_regclass('public.encuestas_satisfaccion') AS tabla`
+      ),
+    ]);
+
+    let npsData = {
+      disponible: false,
+      tasa_nps: null,
+      promotores: 0,
+      pasivos: 0,
+      detractores: 0,
+      total_respuestas: 0,
+    };
+
+    if (nps.rows[0] && nps.rows[0].tabla) {
+      const npsResult = await pool.query(
+        `SELECT
+          COUNT(*)::int AS total_respuestas,
+          COUNT(*) FILTER (WHERE puntaje >= 9)::int AS promotores,
+          COUNT(*) FILTER (WHERE puntaje BETWEEN 7 AND 8)::int AS pasivos,
+          COUNT(*) FILTER (WHERE puntaje <= 6)::int AS detractores,
+          ROUND((
+            ((COUNT(*) FILTER (WHERE puntaje >= 9))::numeric / NULLIF(COUNT(*), 0)) -
+            ((COUNT(*) FILTER (WHERE puntaje <= 6))::numeric / NULLIF(COUNT(*), 0))
+          ) * 100, 2) AS tasa_nps
+         FROM encuestas_satisfaccion
+         WHERE fecha_respuesta BETWEEN $1 AND $2`,
+        [periodo.desde, periodo.hasta]
+      );
+
+      npsData = { disponible: true, ...npsResult.rows[0] };
+    }
+
+    return res.status(200).json({
+      success: true,
+      periodo: {
+        desde: periodo.desde.toISOString(),
+        hasta: periodo.hasta.toISOString(),
+      },
+      data: {
+        tickets_por_estado: porEstado.rows,
+        tiempo_promedio_resolucion_horas: Number(tiempoPromedio.rows[0].horas || 0),
+        tecnico_mas_tickets_cerrados: tecnicoTop.rows[0] || null,
+        satisfaccion_nps: npsData,
+      },
+    });
+  } catch (error) {
+    console.error("Error al consultar metricas dashboard:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor",
+    });
+  }
+};
+
 module.exports = {
   getTicketById,
   getTicketsByDni,
@@ -1006,4 +1257,6 @@ module.exports = {
   getTicketsAsignadosTecnico,
   actualizarEstadoTicket,
   asignarTecnicoTicket,
+  getHistorialProducto,
+  getMetricasDashboard,
 };

@@ -10,6 +10,8 @@ const {
   getTicketsAsignadosTecnico,
   actualizarEstadoTicket,
   asignarTecnicoTicket,
+  getHistorialProducto,
+  getMetricasDashboard,
 } = require("../controllers/ticket.controller");
 const validateDni = require("../middleware/validateDni");
 const verifyToken = require("../middleware/verifyToken");
@@ -23,6 +25,12 @@ router.get("/dni/:dni", validateDni, getTicketsByDni);
 
 // GET /tickets/tecnico/mis-tickets — Panel tecnico: tickets asignados
 router.get("/tecnico/mis-tickets", verifyToken, getTicketsAsignadosTecnico);
+
+// GET /tickets/historial/:numero_serie — FEAT07: historial del equipo
+router.get("/historial/:numero_serie", verifyToken, getHistorialProducto);
+
+// GET /dashboard/metricas — FEAT14: KPIs del periodo solicitado
+router.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
 
 // PUT /tickets/:id/estado — Tecnico asignado actualiza estado del ticket
 router.put("/:id/estado", verifyToken, actualizarEstadoTicket);

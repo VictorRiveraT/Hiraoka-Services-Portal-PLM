@@ -1,6 +1,38 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function obtenerAdmin(idUsuario) {
+  if (!UUID_REGEX.test(String(idUsuario || ''))) return null;
+
+  const result = await pool.query(
+    `SELECT u.id_usuario, u.activo, r.nombre AS rol
+     FROM usuarios u
+     JOIN roles r ON u.id_rol = r.id_rol
+     WHERE u.id_usuario = $1`,
+    [idUsuario]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function exigirAdministrador(req, res) {
+  const idUsuario = req.usuario && req.usuario.id_usuario;
+  const usuario = await obtenerAdmin(idUsuario);
+
+  if (!usuario || !usuario.activo || usuario.rol !== 'Administrador') {
+    res.status(403).json({ error: 'Solo un Administrador activo puede gestionar usuarios.' });
+    return null;
+  }
+
+  return usuario;
+}
+
+async function obtenerRolPorNombre(nombre) {
+  const result = await pool.query('SELECT id_rol, nombre FROM roles WHERE nombre = $1', [nombre]);
+  return result.rows[0] || null;
+}
 
 const SALT_ROUNDS = 12; // según DAS sección 9.1
 
@@ -81,6 +113,167 @@ exports.verify = async (req, res) => {
 exports.logout = async (req, res) => {
   await registrarAuditoria(req.usuario.id_usuario, 'Logout', req.ip, 'Exitoso');
   return res.status(200).json({ message: 'Sesión cerrada correctamente.' });
+};
+
+exports.listarUsuarios = async (req, res) => {
+  try {
+    const admin = await exigirAdministrador(req, res);
+    if (!admin) return;
+
+    const { rol, activo, q } = req.query;
+    const filtros = [];
+    const params = [];
+
+    if (rol) {
+      params.push(rol);
+      filtros.push(`r.nombre = $${params.length}`);
+    }
+
+    if (activo !== undefined) {
+      if (!['true', 'false'].includes(String(activo).toLowerCase())) {
+        return res.status(400).json({ error: 'El filtro activo debe ser true o false.' });
+      }
+      params.push(String(activo).toLowerCase() === 'true');
+      filtros.push(`u.activo = $${params.length}`);
+    }
+
+    if (q) {
+      params.push(`%${String(q).trim()}%`);
+      filtros.push(`(u.username ILIKE $${params.length} OR u.nombre_completo ILIKE $${params.length})`);
+    }
+
+    const result = await pool.query(
+      `SELECT u.id_usuario, u.nombre_completo, u.username, r.nombre AS rol,
+        u.activo, u.fecha_creacion
+       FROM usuarios u
+       JOIN roles r ON u.id_rol = r.id_rol
+       ${filtros.length ? `WHERE ${filtros.join(' AND ')}` : ''}
+       ORDER BY u.fecha_creacion DESC`,
+      params
+    );
+
+    return res.status(200).json({ success: true, data: result.rows, total: result.rowCount });
+  } catch (err) {
+    console.error('[AUTH] Error al listar usuarios:', err);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+exports.crearUsuario = async (req, res) => {
+  const { nombre_completo, username, password, rol } = req.body;
+
+  if (!nombre_completo || !username || !password || !rol) {
+    return res.status(400).json({ error: 'nombre_completo, username, password y rol son requeridos.' });
+  }
+
+  if (String(password).length < 8) {
+    return res.status(400).json({ error: 'La contrasena debe tener al menos 8 caracteres.' });
+  }
+
+  try {
+    const admin = await exigirAdministrador(req, res);
+    if (!admin) return;
+
+    const rolDb = await obtenerRolPorNombre(rol);
+    if (!rolDb) {
+      return res.status(400).json({ error: 'Rol no valido.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const result = await pool.query(
+      `INSERT INTO usuarios (nombre_completo, username, password_hash, id_rol)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id_usuario, nombre_completo, username, activo, fecha_creacion`,
+      [String(nombre_completo).trim(), String(username).trim(), passwordHash, rolDb.id_rol]
+    );
+
+    await registrarAuditoria(admin.id_usuario, 'Creacion de Usuario', req.ip, 'Exitoso');
+    return res.status(201).json({ success: true, data: { ...result.rows[0], rol: rolDb.nombre } });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'El username ya existe.' });
+    }
+    console.error('[AUTH] Error al crear usuario:', err);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+exports.cambiarRolUsuario = async (req, res) => {
+  const { id } = req.params;
+  const { rol } = req.body;
+
+  if (!UUID_REGEX.test(String(id || ''))) {
+    return res.status(400).json({ error: 'El id de usuario no tiene formato valido.' });
+  }
+
+  if (!rol) {
+    return res.status(400).json({ error: 'El campo rol es requerido.' });
+  }
+
+  try {
+    const admin = await exigirAdministrador(req, res);
+    if (!admin) return;
+
+    const rolDb = await obtenerRolPorNombre(rol);
+    if (!rolDb) {
+      return res.status(400).json({ error: 'Rol no valido.' });
+    }
+
+    const result = await pool.query(
+      `UPDATE usuarios
+       SET id_rol = $1
+       WHERE id_usuario = $2
+       RETURNING id_usuario, nombre_completo, username, activo, fecha_creacion`,
+      [rolDb.id_rol, id]
+    );
+
+    if (!result.rowCount) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    await registrarAuditoria(admin.id_usuario, 'Cambio de Rol de Usuario', req.ip, 'Exitoso');
+    return res.status(200).json({ success: true, data: { ...result.rows[0], rol: rolDb.nombre } });
+  } catch (err) {
+    console.error('[AUTH] Error al cambiar rol:', err);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+exports.cambiarEstadoUsuario = async (req, res) => {
+  const { id } = req.params;
+  const { activo } = req.body;
+
+  if (!UUID_REGEX.test(String(id || ''))) {
+    return res.status(400).json({ error: 'El id de usuario no tiene formato valido.' });
+  }
+
+  if (typeof activo !== 'boolean') {
+    return res.status(400).json({ error: 'El campo activo debe ser booleano.' });
+  }
+
+  try {
+    const admin = await exigirAdministrador(req, res);
+    if (!admin) return;
+
+    const result = await pool.query(
+      `UPDATE usuarios
+       SET activo = $1
+       WHERE id_usuario = $2
+       RETURNING id_usuario, nombre_completo, username, activo, fecha_creacion,
+        (SELECT nombre FROM roles WHERE id_rol = usuarios.id_rol) AS rol`,
+      [activo, id]
+    );
+
+    if (!result.rowCount) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    await registrarAuditoria(admin.id_usuario, activo ? 'Activacion de Usuario' : 'Desactivacion de Usuario', req.ip, 'Exitoso');
+    return res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('[AUTH] Error al cambiar estado:', err);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
 };
 
 // ── UTILIDAD INTERNA: Log de Auditoría ────────────────────────────

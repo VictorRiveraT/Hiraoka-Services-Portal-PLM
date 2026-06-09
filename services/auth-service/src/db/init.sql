@@ -105,6 +105,12 @@ CREATE TABLE IF NOT EXISTS tickets (
 ALTER TABLE tickets
   ADD COLUMN IF NOT EXISTS codigo_ticket VARCHAR(20);
 
+ALTER TABLE tickets
+  ADD COLUMN IF NOT EXISTS observaciones_tecnicas TEXT;
+
+ALTER TABLE tickets
+  ADD COLUMN IF NOT EXISTS evidencias_tecnicas JSONB DEFAULT '[]';
+
 WITH tickets_sin_codigo AS (
   SELECT
     id_ticket,

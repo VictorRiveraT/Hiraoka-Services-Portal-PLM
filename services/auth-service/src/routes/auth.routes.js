@@ -15,5 +15,9 @@ const loginLimiter = rateLimit({
 router.post('/login',  loginLimiter, authController.login);
 router.get('/verify',  verifyToken,  authController.verify);
 router.post('/logout', verifyToken,  authController.logout);
+router.get('/usuarios', verifyToken, authController.listarUsuarios);
+router.post('/usuarios', verifyToken, authController.crearUsuario);
+router.put('/usuarios/:id/rol', verifyToken, authController.cambiarRolUsuario);
+router.put('/usuarios/:id/estado', verifyToken, authController.cambiarEstadoUsuario);
 
 module.exports = router;

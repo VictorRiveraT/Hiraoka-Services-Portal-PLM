@@ -44,6 +44,7 @@ app.get('/health', async (req, res) => {
 
 // ── Rutas ─────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/', authRoutes);
 
 // ── Manejo de rutas no encontradas ───────────────────────────────
 app.use((req, res) => {
