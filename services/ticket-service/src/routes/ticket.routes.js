@@ -32,6 +32,9 @@ router.get("/historial/:numero_serie", verifyToken, getHistorialProducto);
 // GET /dashboard/metricas — FEAT14: KPIs del periodo solicitado
 router.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
 
+// POST /tickets - FEAT05: Registro de entrada de equipo
+router.post('/', crearTicket);
+
 // PUT /tickets/:id/estado — Tecnico asignado actualiza estado del ticket
 router.put("/:id/estado", verifyToken, actualizarEstadoTicket);
 

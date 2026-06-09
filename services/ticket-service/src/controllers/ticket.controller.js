@@ -1247,6 +1247,121 @@ const getMetricasDashboard = async (req, res) => {
   }
 };
 
+// POST /tickets - FEAT05: Registro de entrada de equipo
+const crearTicket = async (req, res) => {
+  const { cliente, equipo, descripcion_problema, id_tecnico } = req.body;
+
+  if (!cliente?.dni || !cliente?.nombre || !equipo?.numero_serie || !equipo?.modelo || !descripcion_problema) {
+    return res.status(400).json({
+      success: false,
+      message: 'Faltan campos requeridos: cliente.dni, cliente.nombre, equipo.numero_serie, equipo.modelo, descripcion_problema.',
+    });
+  }
+
+  if (!/^\d{8}$/.test(cliente.dni)) {
+    return res.status(400).json({
+      success: false,
+      message: 'El DNI debe tener exactamente 8 dígitos numéricos.',
+    });
+  }
+
+  const pool = require('../config/database');
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // 1. Buscar o crear cliente
+    let clienteResult = await client.query(
+      'SELECT id_cliente FROM clientes WHERE dni = $1',
+      [cliente.dni]
+    );
+
+    let id_cliente;
+    if (clienteResult.rows.length > 0) {
+      id_cliente = clienteResult.rows[0].id_cliente;
+      // Actualizar datos si cambiaron
+      await client.query(
+        'UPDATE clientes SET nombre = $1, telefono = $2, email = $3 WHERE id_cliente = $4',
+        [cliente.nombre, cliente.telefono || null, cliente.email || null, id_cliente]
+      );
+    } else {
+      const nuevoCliente = await client.query(
+        'INSERT INTO clientes (nombre, dni, telefono, email) VALUES ($1, $2, $3, $4) RETURNING id_cliente',
+        [cliente.nombre, cliente.dni, cliente.telefono || null, cliente.email || null]
+      );
+      id_cliente = nuevoCliente.rows[0].id_cliente;
+    }
+
+    // 2. Buscar o crear producto
+    let productoResult = await client.query(
+      'SELECT id_producto FROM productos WHERE numero_serie = $1',
+      [equipo.numero_serie]
+    );
+
+    let id_producto;
+    if (productoResult.rows.length > 0) {
+      id_producto = productoResult.rows[0].id_producto;
+    } else {
+      const nuevoProducto = await client.query(
+        'INSERT INTO productos (nombre, marca, modelo, numero_serie) VALUES ($1, $2, $3, $4) RETURNING id_producto',
+        [
+          equipo.modelo,
+          equipo.marca || null,
+          equipo.modelo,
+          equipo.numero_serie,
+        ]
+      );
+      id_producto = nuevoProducto.rows[0].id_producto;
+    }
+
+    // 3. Crear ticket
+    const nuevoTicket = await client.query(
+      `INSERT INTO tickets
+        (id_cliente, id_producto, id_tecnico, estado, descripcion_problema, fecha_estimada_entrega)
+       VALUES ($1, $2, $3, 'Recibido', $4, NOW() + INTERVAL '7 days')
+       RETURNING id_ticket, estado, fecha_ingreso, fecha_estimada_entrega`,
+      [id_cliente, id_producto, id_tecnico || null, descripcion_problema]
+    );
+
+    const ticket = nuevoTicket.rows[0];
+
+    // 4. Registrar en audit_log
+    await client.query(
+      `INSERT INTO log_auditoria (id_usuario, accion, tabla_afectada, registro_id, detalle)
+       VALUES ($1, 'CREATE', 'tickets', $2, $3)`,
+      [
+        null,
+        ticket.id_ticket,
+        JSON.stringify({ estado: 'Recibido', cliente: cliente.dni, producto: equipo.numero_serie }),
+      ]
+    );
+
+    await client.query('COMMIT');
+
+    return res.status(201).json({
+      success: true,
+      message: 'Ticket registrado correctamente.',
+      data: {
+        id_ticket: ticket.id_ticket,
+        estado: ticket.estado,
+        fecha_ingreso: ticket.fecha_ingreso,
+        fecha_estimada_entrega: ticket.fecha_estimada_entrega,
+      },
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('[ticket-service] Error al crear ticket:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno al registrar el ticket.',
+    });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getTicketById,
   getTicketsByDni,
@@ -1259,4 +1374,5 @@ module.exports = {
   asignarTecnicoTicket,
   getHistorialProducto,
   getMetricasDashboard,
+  crearTicket,
 };
