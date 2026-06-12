@@ -48,6 +48,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', createProxyMiddleware({
   target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
   changeOrigin: true,
+  pathRewrite: { '^/api/auth': '' },
   on: {
     error: (err, req, res) => {
       console.error('[GATEWAY] Error al conectar con auth-service:', err.message);
