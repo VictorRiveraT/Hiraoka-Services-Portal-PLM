@@ -12,13 +12,28 @@ app.use(helmet({
   contentSecurityPolicy: false,
 }));
 
-// ── Rate limiting global (protección ante sobrecargas) ────────
+// ── Rate limiting ─────────────────────────────────────────────
+
+// Global: 1000 requests por IP cada 15 minutos
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
 });
 app.use(globalLimiter);
+
+// Auth: 10 intentos por IP cada 15 minutos (proteccion fuerza bruta)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de autenticacion. Espera 15 minutos.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // ── Health check del gateway ──────────────────────────────────
 app.get('/health', (req, res) => {
