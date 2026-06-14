@@ -234,14 +234,14 @@
 
         <section class="module-view" id="historial-view" hidden>
           <div class="module-heading">
-            <h1>Historial de Equipos</h1>
-            <p>Consulte las atenciones anteriores usando el numero de serie del equipo.</p>
+            <h1>Historial y Trazabilidad de Equipos</h1>
+            <p>Registro historico de intervenciones asignadas a este tecnico.</p>
           </div>
-          <div class="module-search-card">
-            <div class="garantia-search-row">
-              <input id="historial-serial" type="text" placeholder="Ingrese el numero de serie del equipo...">
-              <button class="buscar-repuesto-btn" id="btn-buscar-historial" type="button">Buscar historial</button>
-            </div>
+          <div class="history-toolbar">
+            <input id="historial-serial" type="text" placeholder="Buscar equipo por codigo o serie...">
+            <select id="historial-state"><option value="">Todos los estados</option><option>Diagnosticando</option><option>Reparando</option><option>Listo</option><option>Entregado</option></select>
+            <button class="buscar-repuesto-btn" id="btn-buscar-historial" type="button">Buscar historial</button>
+            <button class="download-button" id="btn-exportar-historial" type="button">Exportar reporte mensual</button>
             <p class="module-feedback" id="historial-feedback" hidden></p>
           </div>
           <div class="history-list" id="historial-list"></div>
@@ -249,10 +249,19 @@
 
         <section class="module-view" id="config-view" hidden>
           <div class="module-heading">
-            <h1>Configuracion del Taller</h1>
-            <p>Personalice el comportamiento de esta estacion de trabajo.</p>
+            <h1>Ajustes de Interfaz Local</h1>
+            <p>Configuracion de visualizacion tactil y rendimiento de cache para la estacion del taller.</p>
           </div>
           <form class="settings-card" id="config-form">
+            <fieldset class="setting-block">
+              <legend>Tamaño de texto en pantallas de laboratorio</legend>
+              <p>Ajusta la legibilidad de tickets bajo las luces del taller.</p>
+              <div class="font-options">
+                <label><input name="font-size" value="normal" type="radio"> Normal (14px)</label>
+                <label><input name="font-size" value="large" type="radio"> Grande (16px)</label>
+                <label><input name="font-size" value="xlarge" type="radio"> Muy grande (18px)</label>
+              </div>
+            </fieldset>
             <label class="setting-row">
               <span><strong>Actualizacion automatica</strong><small>Recargar tickets cada 60 segundos.</small></span>
               <input id="config-auto-refresh" type="checkbox">
@@ -265,6 +274,11 @@
               Nombre de esta estacion
               <input id="config-device-name" type="text" maxlength="60" placeholder="Taller principal">
             </label>
+            <section class="cache-panel">
+              <strong>Almacenamiento y Cache Local del Taller</strong>
+              <p id="cache-usage">Memoria local disponible para preferencias de esta estacion.</p>
+              <button class="cache-clear" id="clear-cache" type="button">Limpiar cache temporal</button>
+            </section>
             <div class="settings-actions">
               <p class="module-feedback" id="config-feedback" hidden></p>
               <button class="save-action" type="submit">Guardar preferencias</button>

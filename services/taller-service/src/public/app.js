@@ -188,6 +188,10 @@ function showConfigView() {
   document.getElementById('config-auto-refresh').checked = Boolean(preferences.autoRefresh);
   document.getElementById('config-show-delivered').checked = preferences.showDelivered !== false;
   document.getElementById('config-device-name').value = preferences.deviceName || '';
+  const fontOption = document.querySelector(`[name="font-size"][value="${preferences.fontSize || 'normal'}"]`);
+  if (fontOption) fontOption.checked = true;
+  document.getElementById('cache-usage').textContent =
+    `Preferencias locales almacenadas: ${new Blob([JSON.stringify(localStorage)]).size} bytes.`;
 }
 
 function setMessage(message, ok = false) {
@@ -444,14 +448,16 @@ async function buscarHistorial() {
     const data = await apiJson(`/api/tickets/historial/${encodeURIComponent(serial)}`, {
       headers: authHeaders(),
     });
-    const items = data.data || [];
+    const state = document.getElementById('historial-state').value;
+    const items = (data.data || []).filter((item) => !state || item.estado === state);
     feedback.textContent = items.length ? `${items.length} atencion(es) encontrada(s).` : 'No hay atenciones registradas.';
     list.innerHTML = items.map((item) => `
-      <article class="history-card">
+      <article class="history-card border-${item.estado}">
         <div><strong>Ticket #${ticketCode(item)}</strong><span>${productName(item)}</span></div>
         ${badge(item.estado)}
         <div><small>Ingreso</small><strong>${fmtFecha(item.fecha_ingreso)}</strong></div>
         <p>${item.descripcion_problema || item.observaciones_tecnicas || 'Sin detalle registrado.'}</p>
+        <button class="row-action" type="button">Ver archivo</button>
       </article>
     `).join('');
   } catch (error) {
@@ -560,6 +566,7 @@ document.getElementById('config-form').addEventListener('submit', (event) => {
     autoRefresh: document.getElementById('config-auto-refresh').checked,
     showDelivered: document.getElementById('config-show-delivered').checked,
     deviceName: document.getElementById('config-device-name').value.trim(),
+    fontSize: document.querySelector('[name="font-size"]:checked')?.value || 'normal',
   };
   localStorage.setItem('taller_preferences', JSON.stringify(preferences));
   applyRefreshPreference();
@@ -568,6 +575,28 @@ document.getElementById('config-form').addEventListener('submit', (event) => {
   feedback.textContent = 'Preferencias guardadas en este dispositivo.';
   feedback.hidden = false;
   showToast('Configuracion guardada.');
+});
+document.getElementById('clear-cache').addEventListener('click', () => {
+  localStorage.removeItem('taller_preferences');
+  preferences = {};
+  document.body.dataset.fontSize = 'normal';
+  showConfigView();
+  showToast('Cache temporal limpiada.');
+});
+document.querySelectorAll('[name="font-size"]').forEach((option) => option.addEventListener('change', () => {
+  document.body.dataset.fontSize = option.value;
+}));
+document.getElementById('historial-state').addEventListener('change', buscarHistorial);
+document.getElementById('btn-exportar-historial').addEventListener('click', () => {
+  const rows = [['Ticket', 'Equipo', 'Estado', 'Ingreso'], ...tickets.map((ticket) => [
+    ticketCode(ticket), productName(ticket), ticket.estado, fmtFecha(ticket.fecha_ingreso),
+  ])];
+  const blob = new Blob([rows.map((row) => row.join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'historial-taller.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
 });
 
 document.getElementById('download-csv').addEventListener('click', () => {
@@ -612,3 +641,4 @@ if (token) {
  }
 
 applyRefreshPreference();
+document.body.dataset.fontSize = preferences.fontSize || 'normal';

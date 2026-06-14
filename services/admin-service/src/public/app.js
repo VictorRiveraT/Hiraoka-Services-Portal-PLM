@@ -9,11 +9,13 @@ const roleLabel   = document.getElementById('role-label');
 const viewDashboard = document.getElementById('view-dashboard');
 const viewUsuarios  = document.getElementById('view-usuarios');
 const viewHistorial = document.getElementById('view-historial');
+const viewConfig    = document.getElementById('view-config');
 
 // Nav
 const navDashboard = document.getElementById('nav-dashboard');
 const navUsuarios  = document.getElementById('nav-usuarios');
 const navHistorial = document.getElementById('nav-historial');
+const navConfig    = document.getElementById('nav-config');
 
 // Usuarios
 const userSearch    = document.getElementById('user-search');
@@ -42,6 +44,8 @@ let token = sessionStorage.getItem('admin_token') || '';
 let allUsers = [];
 let usersPage = 1;
 const PAGE_SIZE = 10;
+let adminPreferences = JSON.parse(localStorage.getItem('admin_preferences') || '{}');
+let dashboardTimer = null;
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────
 async function apiJson(url, options = {}) {
@@ -62,7 +66,7 @@ function fmtFecha(value) {
 
 // ── NAVEGACION ──────────────────────────────────────────────────────────────────
 function setActiveNav(btn) {
-  [navDashboard, navUsuarios, navHistorial].forEach(b => b.classList.remove('active'));
+  [navDashboard, navUsuarios, navHistorial, navConfig].forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
 
@@ -70,6 +74,7 @@ function hideAllViews() {
   viewDashboard.hidden = true;
   viewUsuarios.hidden  = true;
   viewHistorial.hidden = true;
+  viewConfig.hidden = true;
 }
 
 function showLogin(msg) {
@@ -358,6 +363,7 @@ loginForm.addEventListener('submit', async e => {
 navDashboard.addEventListener('click', showDashboard);
 navUsuarios.addEventListener('click', showUsuarios);
 navHistorial.addEventListener('click', showHistorial);
+navConfig.addEventListener('click', showConfig);
 document.getElementById('nav-tickets').addEventListener('click', () => {
   window.location.href = '/'; // redirige al portal principal
 });
@@ -401,6 +407,21 @@ document.getElementById('btn-crear-usuario').addEventListener('click', async () 
 // ── HISTORIAL ──────────────────────────────────────────────────────────────────
 btnHistorialBuscar.addEventListener('click', buscarHistorial);
 historialSerial.addEventListener('keydown', e => { if (e.key === 'Enter') buscarHistorial(); });
+document.getElementById('admin-config-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  adminPreferences = {
+    autoRefresh: document.getElementById('admin-auto-refresh').checked,
+    alerts: document.getElementById('admin-alerts').checked,
+    publicGuide: document.getElementById('admin-public-guide').checked,
+    fontSize: document.getElementById('admin-font-size').value,
+  };
+  localStorage.setItem('admin_preferences', JSON.stringify(adminPreferences));
+  localStorage.setItem('hiraoka_public_guide_enabled', String(adminPreferences.publicGuide));
+  applyAdminPreferences();
+  const message = document.getElementById('admin-config-message');
+  message.textContent = 'Configuracion guardada en este navegador.';
+  message.hidden = false;
+});
 
 // ── ARRANQUE ───────────────────────────────────────────────────────────────────
 if (token) {
@@ -417,4 +438,21 @@ if (token) {
   }
 } else {
   showLogin();
+}
+applyAdminPreferences();
+
+function applyAdminPreferences() {
+  document.body.dataset.fontSize = adminPreferences.fontSize || 'normal';
+  window.clearInterval(dashboardTimer);
+  dashboardTimer = adminPreferences.autoRefresh ? window.setInterval(loadDashboard, 60000) : null;
+}
+
+function showConfig() {
+  hideAllViews();
+  viewConfig.hidden = false;
+  setActiveNav(navConfig);
+  document.getElementById('admin-auto-refresh').checked = Boolean(adminPreferences.autoRefresh);
+  document.getElementById('admin-alerts').checked = adminPreferences.alerts !== false;
+  document.getElementById('admin-public-guide').checked = adminPreferences.publicGuide !== false;
+  document.getElementById('admin-font-size').value = adminPreferences.fontSize || 'normal';
 }

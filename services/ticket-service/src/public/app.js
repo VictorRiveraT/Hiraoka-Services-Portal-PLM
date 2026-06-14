@@ -225,6 +225,8 @@ function renderDetail(ticket) {
   $('detail-title').textContent = `Ticket #${ticketCode(ticket)}`;
   $('det-equipo').textContent = productName(ticket);
   $('det-badge-wrap').innerHTML = badge(estado);
+  $('nps-detail-action').hidden = estado !== 'Entregado';
+  $('nps-detail-action').onclick = () => openNps(ticket.id_ticket || ticket.codigo_ticket);
 
   if (ticket.fecha_estimada_entrega && estado !== 'Entregado') {
     $('det-fecha-txt').textContent = `Fecha estimada de entrega: ${fmtFecha(ticket.fecha_estimada_entrega)}`;
@@ -386,6 +388,10 @@ $('nps-form').addEventListener('submit', async (event) => {
 });
 
 $('nps-close').addEventListener('click', () => $('nps-dialog').close());
+$('guide-close').addEventListener('click', () => {
+  $('guide-dialog').close();
+  sessionStorage.setItem('hiraoka_guide_seen', 'true');
+});
 
 function goSearch() {
   setMode('view-search');
@@ -407,3 +413,7 @@ $('inp-ticket').addEventListener('input', function onTicketInput() {
 });
 
 setMode('view-search');
+
+if (localStorage.getItem('hiraoka_public_guide_enabled') !== 'false' && !sessionStorage.getItem('hiraoka_guide_seen')) {
+  window.setTimeout(() => $('guide-dialog').showModal(), 350);
+}

@@ -107,15 +107,41 @@
         </article>
       </div>
 
+      <button class="nps-detail-action" id="nps-detail-action" type="button" hidden>Completar encuesta de satisfaccion (NPS)</button>
       <button class="text-button detail-return" id="btn-nueva-consulta" type="button">← Nueva consulta</button>
     </section>
   </main>
 
+  <dialog class="guide-dialog" id="guide-dialog">
+    <article class="guide-panel">
+      <button class="guide-close" id="guide-close" type="button" aria-label="Cerrar guia">x</button>
+      <header class="guide-heading">
+        <div><span class="guide-kicker">Guia rapida</span><h2>Como rastrear tu Servicio Tecnico en Linea</h2></div>
+        <p>Sigue el avance de tu equipo paso a paso desde cualquier dispositivo.</p>
+      </header>
+      <h3>Paso 1: ¿Como consultar tu ticket?</h3>
+      <div class="guide-steps">
+        <section><b>1</b><strong>Ingresa a la Web</strong><p>Visita nuestro portal publico desde tu celular o computadora.</p></section>
+        <section><b>2</b><strong>Digita tus Datos</strong><p>Introduce tu DNI o el codigo de ticket impreso en tu comprobante.</p></section>
+        <section><b>3</b><strong>Consulta al Instante</strong><p>Presiona Consultar estado para ver el avance del taller.</p></section>
+      </div>
+      <h3>Estados del Servicio Tecnico</h3>
+      <div class="guide-statuses">
+        <span class="state-Recibido">Recibido</span><span class="state-Diagnosticando">En diagnostico</span>
+        <span class="state-Reparando">En reparacion</span><span class="state-Listo">Listo para retiro</span>
+        <span class="state-Entregado">Entregado</span>
+      </div>
+      <footer class="guide-help"><strong>¿Necesitas ayuda adicional?</strong><span>Central: (01) 611-3000 · Soporte: servicio@hiraoka.com.pe</span></footer>
+    </article>
+  </dialog>
+
   <dialog class="nps-dialog" id="nps-dialog">
     <form class="nps-form" id="nps-form">
       <button class="nps-close" id="nps-close" type="button" aria-label="Cerrar">x</button>
+      <div class="nps-success-icon">✓</div>
       <span class="nps-kicker">Tu opinion mejora nuestro servicio</span>
       <h2>¿Que tan probable es que recomiendes Hiraoka Services?</h2>
+      <p class="nps-intro">Tu equipo fue entregado. Tomate un minuto para calificar tu experiencia con nuestro servicio tecnico.</p>
       <div class="nps-scale" id="nps-scale" aria-label="Puntuacion NPS"></div>
       <div class="nps-scale-labels"><span>Nada probable</span><span>Muy probable</span></div>
       <label class="field">

@@ -320,6 +320,29 @@
           </div>
         </section>
 
+        <section class="main-content" id="view-config" hidden>
+          <div class="page-heading">
+            <h1>Configuracion Administrativa</h1>
+            <p>Preferencias locales de visualizacion, actualizacion y alertas del panel.</p>
+          </div>
+          <form class="admin-settings" id="admin-config-form">
+            <fieldset>
+              <legend>Interfaz del panel</legend>
+              <label class="admin-setting"><span><strong>Actualizacion automatica</strong><small>Recarga las metricas cada 60 segundos.</small></span><input id="admin-auto-refresh" type="checkbox"></label>
+              <label class="admin-setting"><span><strong>Alertas visuales</strong><small>Muestra avisos importantes dentro del panel.</small></span><input id="admin-alerts" type="checkbox"></label>
+              <label class="admin-field">Escala tipografica
+                <select id="admin-font-size"><option value="normal">Normal</option><option value="large">Grande</option><option value="xlarge">Muy grande</option></select>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Portal y notificaciones</legend>
+              <label class="admin-setting"><span><strong>Mostrar guia publica</strong><small>Permite mostrar la guia emergente al iniciar el portal publico.</small></span><input id="admin-public-guide" type="checkbox"></label>
+              <p class="config-note">Las preferencias se guardan solo en este navegador. Las credenciales y secretos permanecen en el servidor.</p>
+            </fieldset>
+            <div class="config-actions"><p id="admin-config-message" hidden></p><button class="btn-primary" type="submit">Guardar configuracion</button></div>
+          </form>
+        </section>
+
       </div>
     </section>
 
