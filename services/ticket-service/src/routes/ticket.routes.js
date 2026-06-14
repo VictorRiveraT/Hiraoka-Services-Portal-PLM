@@ -12,6 +12,8 @@ const {
   asignarTecnicoTicket,
   getHistorialProducto,
   getMetricasDashboard,
+  crearTicket,
+  responderNps,
 } = require("../controllers/ticket.controller");
 const validateDni = require("../middleware/validateDni");
 const verifyToken = require("../middleware/verifyToken");
@@ -33,7 +35,10 @@ router.get("/historial/:numero_serie", verifyToken, getHistorialProducto);
 router.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
 
 // POST /tickets - FEAT05: Registro de entrada de equipo
-router.post('/', crearTicket);
+router.post('/', verifyToken, crearTicket);
+
+// POST /tickets/:id/nps - FEAT15: registra una unica encuesta NPS
+router.post("/:id/nps", responderNps);
 
 // PUT /tickets/:id/estado — Tecnico asignado actualiza estado del ticket
 router.put("/:id/estado", verifyToken, actualizarEstadoTicket);

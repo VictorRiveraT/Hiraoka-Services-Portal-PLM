@@ -50,6 +50,8 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/agente', express.static(path.join(__dirname, 'public/agente')));
+
 // Health check
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "ticket-service" });
@@ -59,6 +61,4 @@ app.get("/health", (req, res) => {
 app.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
 app.use("/tickets", ticketRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Ticket Service corriendo en puerto ${PORT}`);
-});
+app.listen(PORT);

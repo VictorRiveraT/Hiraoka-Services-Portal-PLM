@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+app.set('trust proxy', 1);
 
 const cspDirectives = {
   defaultSrc: ["'self'"],
@@ -52,7 +53,4 @@ app.use((req, res) => {
 });
 
 // ── Iniciar servidor ──────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`[auth-service] corriendo en puerto ${PORT}`);
-  console.log(`[auth-service] entorno: ${process.env.NODE_ENV}`);
-});
+app.listen(PORT);

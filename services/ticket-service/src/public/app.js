@@ -41,6 +41,8 @@ const TICKET_CODE_RE = /^TK-\d{4}-\d{3,}$/i;
 const DNI_RE = /^\d{8}$/;
 
 let currentDni = '';
+let currentNpsTicket = '';
+let selectedNpsScore = 0;
 
 function $(id) {
   return document.getElementById(id);
@@ -98,35 +100,112 @@ function showEmpty(message) {
   setMode('view-empty');
 }
 
+function warrantyBadge(status) {
+  if (!status) return '<span class="warranty-badge warranty-loading">Verificando...</span>';
+  const map = {
+    activa:     ['warranty-activa',     'Activa'],
+    expirada:   ['warranty-expirada',   'Expirada'],
+    por_vencer: ['warranty-por-vencer', 'Por vencer'],
+  };
+  const [cls, label] = map[status] || ['warranty-loading', status];
+  return `<span class="warranty-badge ${cls}">${label}</span>`;
+}
+
+async function fetchWarranty(idTicket) {
+  try {
+    const res = await fetch(`/api/tickets/${idTicket}/garantia`);
+    const data = await res.json();
+    if (!res.ok || !data.success) return null;
+    const g = data.data?.garantia;
+    if (!g) return null;
+    if (!g.tiene_garantia) return 'expirada';
+    const diasRestantes = g.dias_restantes ?? 999;
+    return diasRestantes <= 30 ? 'por_vencer' : 'activa';
+  } catch {
+    return null;
+  }
+}
+
 function renderResults(tickets) {
   $('results-title').textContent = `Resultados de busqueda para el DNI: ${maskDni(currentDni)}`;
   $('results-count').textContent = `${tickets.length} orden${tickets.length === 1 ? '' : 'es'} encontrada${tickets.length === 1 ? '' : 's'}`;
 
   const list = $('tickets-list');
+  const tbody = $('tickets-table-body');
   list.innerHTML = '';
+  tbody.innerHTML = '';
 
   tickets.forEach((ticket) => {
     const estado = ticket.estado || 'Recibido';
     const copy = ESTADO_COPY[estado] || ESTADO_COPY.Recibido;
+    const equipo = productName(ticket);
+    const idTicket = ticket.id_ticket;
+    const codigo = ticketCode(ticket);
+
+    // ── Mobile card ──
     const card = document.createElement('article');
     card.className = 'ticket-result';
     card.tabIndex = 0;
     card.innerHTML = `
       <header>
-        <h2>Ticket #${ticketCode(ticket)}</h2>
+        <h2>Ticket #${codigo}</h2>
         ${badge(estado)}
       </header>
+      <p class="meta-equipo"><span>Equipo:</span> ${equipo}</p>
+      <div class="meta-row">
+        <span class="warranty-badge warranty-loading" data-warranty-card="${idTicket}">Garantia...</span>
+      </div>
       <p>${copy.card}</p>
       <span class="action-copy">${estado === 'Entregado' ? 'Completar encuesta de satisfaccion (NPS)' : 'Ver detalle tecnico'} -></span>
     `;
-    card.addEventListener('click', () => loadDetail(ticket.id_ticket || ticketCode(ticket)));
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        loadDetail(ticket.id_ticket || ticketCode(ticket));
+    card.addEventListener('click', () => {
+      if (estado === 'Entregado') openNps(idTicket || codigo);
+      else loadDetail(idTicket || codigo);
+    });
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (estado === 'Entregado') openNps(idTicket || codigo);
+        else loadDetail(idTicket || codigo);
       }
     });
     list.appendChild(card);
+
+    // ── Desktop table row ──
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-ticket">Ticket #${codigo}</td>
+      <td>${badge(estado)}</td>
+      <td>${equipo}</td>
+      <td><span class="warranty-badge warranty-loading" data-warranty-row="${idTicket}">Verificando...</span></td>
+      <td class="col-details"><span data-details-row="${idTicket}">—</span></td>
+    `;
+    tr.addEventListener('click', () => {
+      if (estado === 'Entregado') openNps(idTicket || codigo);
+      else loadDetail(idTicket || codigo);
+    });
+    tbody.appendChild(tr);
+
+    // ── Cargar garantía de forma asíncrona ──
+    fetchWarranty(idTicket).then((status) => {
+      // actualizar card mobile
+      const cardBadge = document.querySelector(`[data-warranty-card="${idTicket}"]`);
+      if (cardBadge) cardBadge.outerHTML = warrantyBadge(status);
+      // actualizar fila desktop
+      const rowBadge = document.querySelector(`[data-warranty-row="${idTicket}"]`);
+      if (rowBadge) rowBadge.outerHTML = warrantyBadge(status);
+      // detalles: si tiene repuesto asignado (se puede extender con datos del ticket)
+      const detailsCell = document.querySelector(`[data-details-row="${idTicket}"]`);
+      if (detailsCell) {
+        if (ticket.repuesto_asignado) {
+          detailsCell.innerHTML = `<span class="detail-parts">🔧 ${ticket.repuesto_asignado}</span>`;
+        } else if (estado === 'Listo' || estado === 'Entregado') {
+          detailsCell.innerHTML = `<span class="detail-quality">✓ Control de calidad aprobado</span>`;
+        } else {
+          detailsCell.textContent = '—';
+        }
+      }
+    });
   });
 
   setMode('view-results');
@@ -250,6 +329,63 @@ async function consultar(event) {
     setLoading(false);
   }
 }
+
+function openNps(ticketId) {
+  currentNpsTicket = ticketId;
+  selectedNpsScore = 0;
+  $('nps-comment').value = '';
+  $('nps-message').hidden = true;
+  document.querySelectorAll('.nps-score').forEach((button) => button.classList.remove('selected'));
+  $('nps-dialog').showModal();
+}
+
+for (let score = 1; score <= 10; score += 1) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'nps-score';
+  button.textContent = score;
+  button.addEventListener('click', () => {
+    selectedNpsScore = score;
+    document.querySelectorAll('.nps-score').forEach((item) => {
+      item.classList.toggle('selected', Number(item.textContent) === score);
+    });
+  });
+  $('nps-scale').appendChild(button);
+}
+
+$('nps-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = $('nps-message');
+  if (!selectedNpsScore) {
+    message.textContent = 'Selecciona una puntuacion del 1 al 10.';
+    message.hidden = false;
+    return;
+  }
+
+  $('nps-submit').disabled = true;
+  try {
+    const response = await fetch(`/api/tickets/${encodeURIComponent(currentNpsTicket)}/nps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        puntuacion: selectedNpsScore,
+        comentario: $('nps-comment').value.trim(),
+      }),
+    });
+    const data = await response.json();
+    message.textContent = data.message || 'Encuesta registrada.';
+    message.classList.toggle('success', response.ok);
+    message.hidden = false;
+    if (response.ok) setTimeout(() => $('nps-dialog').close(), 1200);
+  } catch {
+    message.textContent = 'No se pudo enviar la encuesta. Intenta nuevamente.';
+    message.hidden = false;
+  } finally {
+    $('nps-submit').disabled = false;
+  }
+});
+
+$('nps-close').addEventListener('click', () => $('nps-dialog').close());
 
 function goSearch() {
   setMode('view-search');

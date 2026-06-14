@@ -47,20 +47,31 @@
 
       <div class="app-shell">
         <aside class="sidebar">
-          <button class="side-item active" type="button">
+          <button class="side-item active" id="nav-tickets" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
             Tickets Asignados
           </button>
-          <button class="side-item" type="button">
+          <!-- HSPP88: Consulta de Repuestos (FEAT10) -->
+          <button class="side-item" id="nav-repuestos" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Consulta de Repuestos
+          </button>
+          <!-- HSPP89: Verificacion de Garantia (FEAT12) -->
+          <button class="side-item" id="nav-garantia" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Verificacion de Garantia
+          </button>
+          <button class="side-item" id="nav-historial" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
             Historial de Equipos
           </button>
-          <button class="side-item" type="button">
+          <button class="side-item" id="nav-config" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 16 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.3.31.66.5 1.1.6H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
             Configuracion
           </button>
         </aside>
 
+        <!-- Vista: Tickets Asignados -->
         <section class="main-view" id="main-view">
           <div class="page-heading">
             <div>
@@ -86,6 +97,7 @@
           <div class="assigned-list" id="assigned-list"></div>
         </section>
 
+        <!-- Vista: Detalle del ticket -->
         <section class="detail-view" id="detail-view" hidden>
           <button class="back-button" id="back-to-list" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
@@ -98,12 +110,17 @@
               <hr>
               <h2 id="equipment-name">Equipo</h2>
               <p id="equipment-serie">Serie</p>
-              <span class="warranty-chip">Con Garantia Activa</span>
+              <span class="warranty-chip" id="warranty-chip">Con Garantia Activa</span>
               <dl>
                 <div><dt>Ingreso:</dt><dd id="entry-date">-</dd></div>
                 <div><dt>Tecnico Asignado:</dt><dd id="assigned-tech">Jander Huamani</dd></div>
                 <div><dt>Cliente:</dt><dd id="customer-name">-</dd></div>
               </dl>
+              <!-- HSPP88: boton rapido para ir a Consulta de Repuestos desde el detalle -->
+              <button class="repuesto-shortcut" id="btn-repuesto-shortcut" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Consultar Stock de Repuestos (FEAT10)
+              </button>
             </aside>
 
             <form class="update-card" id="update-form">
@@ -126,9 +143,139 @@
             </form>
           </div>
         </section>
+
+        <!-- HSPP88: Vista Consulta de Repuestos (FEAT10) -->
+        <section class="module-view" id="repuestos-view" hidden>
+          <div class="module-heading">
+            <h1>Modulo de Consulta de Repuestos</h1>
+            <p>Consulte la disponibilidad en tiempo real de repuestos en el inventario central y almacenes de Hiraoka Services.</p>
+          </div>
+
+          <div class="module-search-card">
+            <div class="module-search-row">
+              <div class="module-search-field">
+                <label class="field-label" for="repuesto-query">Busqueda de Repuesto</label>
+                <input id="repuesto-query" type="text" placeholder="Ingrese codigo o nombre del repuesto (Ej: PNL-SAM-S24)...">
+              </div>
+              <div class="module-select-field">
+                <label class="field-label" for="repuesto-categoria">Categoria</label>
+                <select id="repuesto-categoria">
+                  <option value="">Todas las categorias</option>
+                  <option value="pantallas">Pantallas</option>
+                  <option value="baterias">Baterias</option>
+                  <option value="circuitos">Circuitos</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+              <button class="buscar-repuesto-btn" id="btn-buscar-repuesto" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                Buscar Repuesto
+              </button>
+            </div>
+          </div>
+
+          <div class="repuesto-table-wrap">
+            <table class="repuesto-table">
+              <thead>
+                <tr>
+                  <th>Codigo</th>
+                  <th>Descripcion</th>
+                  <th>Stock Disponible</th>
+                  <th>Precio Referencial</th>
+                  <th>Tiempo Estimado de Llegada (ETA)</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="repuesto-tbody">
+                <tr class="repuesto-empty-row">
+                  <td colspan="6">Ingrese un termino de busqueda para consultar el inventario.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- HSPP89: Vista Verificacion de Garantia (FEAT12) -->
+        <section class="module-view" id="garantia-view" hidden>
+          <div class="module-heading">
+            <h1>Validacion de Cobertura de Garantia</h1>
+            <p>Ingrese el numero de serie del equipo para verificar la vigencia y condiciones de cobertura de garantia. El sistema validara automaticamente contra la base de datos de garantias de Hiraoka.</p>
+          </div>
+
+          <div class="module-search-card">
+            <div class="garantia-search-row">
+              <input id="garantia-serial" type="text" placeholder="Ingrese el Numero de Serie del Equipo (S/N)...">
+              <button class="buscar-repuesto-btn" id="btn-verificar-garantia" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                Verificar Estado
+              </button>
+            </div>
+          </div>
+
+          <!-- Resultado de garantia -->
+          <div id="garantia-resultado" hidden>
+            <div class="garantia-result-card" id="garantia-card">
+              <div class="garantia-device-info">
+                <strong id="garantia-equipo-nombre">-</strong>
+                <span id="garantia-serie-label">-</span>
+              </div>
+              <div class="garantia-badge-block" id="garantia-badge-block">-</div>
+              <ul class="garantia-details" id="garantia-details"></ul>
+            </div>
+          </div>
+
+          <div class="garantia-nota">
+            <strong>Nota tecnica:</strong> El modulo de verificacion de garantias (FEAT12) consulta automaticamente
+            la base de datos central de Hiraoka para determinar la vigencia y condiciones de cobertura del equipo antes de iniciar
+            el proceso de diagnostico tecnico. Esta validacion reduce disputas y reclamos originados por desconocimiento de las
+            condiciones de cobertura.
+          </div>
+        </section>
+
+        <section class="module-view" id="historial-view" hidden>
+          <div class="module-heading">
+            <h1>Historial de Equipos</h1>
+            <p>Consulte las atenciones anteriores usando el numero de serie del equipo.</p>
+          </div>
+          <div class="module-search-card">
+            <div class="garantia-search-row">
+              <input id="historial-serial" type="text" placeholder="Ingrese el numero de serie del equipo...">
+              <button class="buscar-repuesto-btn" id="btn-buscar-historial" type="button">Buscar historial</button>
+            </div>
+            <p class="module-feedback" id="historial-feedback" hidden></p>
+          </div>
+          <div class="history-list" id="historial-list"></div>
+        </section>
+
+        <section class="module-view" id="config-view" hidden>
+          <div class="module-heading">
+            <h1>Configuracion del Taller</h1>
+            <p>Personalice el comportamiento de esta estacion de trabajo.</p>
+          </div>
+          <form class="settings-card" id="config-form">
+            <label class="setting-row">
+              <span><strong>Actualizacion automatica</strong><small>Recargar tickets cada 60 segundos.</small></span>
+              <input id="config-auto-refresh" type="checkbox">
+            </label>
+            <label class="setting-row">
+              <span><strong>Mostrar tickets entregados</strong><small>Incluye servicios concluidos en la lista principal.</small></span>
+              <input id="config-show-delivered" type="checkbox">
+            </label>
+            <label class="setting-field">
+              Nombre de esta estacion
+              <input id="config-device-name" type="text" maxlength="60" placeholder="Taller principal">
+            </label>
+            <div class="settings-actions">
+              <p class="module-feedback" id="config-feedback" hidden></p>
+              <button class="save-action" type="submit">Guardar preferencias</button>
+            </div>
+          </form>
+        </section>
+
       </div>
     </section>
 
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <script src="/taller/app.js" defer></script>
   </body>
-</html>
+ </html>

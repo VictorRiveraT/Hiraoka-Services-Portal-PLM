@@ -135,3 +135,22 @@ CREATE INDEX IF NOT EXISTS idx_tickets_ingreso  ON tickets(fecha_ingreso DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tickets_codigo_ticket
   ON tickets(codigo_ticket)
   WHERE codigo_ticket IS NOT NULL;
+
+ALTER TABLE tickets
+  ADD COLUMN IF NOT EXISTS encuesta_completada BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ============================================================
+-- TABLA: nps_respuestas
+-- Encuesta NPS seudonimizada por ticket entregado (FEAT15)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS nps_respuestas (
+  id_respuesta       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id_ticket          UUID NOT NULL UNIQUE REFERENCES tickets(id_ticket) ON DELETE RESTRICT,
+  cliente_seudonimo  VARCHAR(64) NOT NULL,
+  puntuacion         SMALLINT NOT NULL CHECK (puntuacion BETWEEN 1 AND 10),
+  comentario         VARCHAR(1000),
+  fecha_respuesta    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_nps_fecha_respuesta
+  ON nps_respuestas(fecha_respuesta DESC);

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hiraoka Services - Registro de Equipo</title>
+    <link rel="stylesheet" href="/agente/styles.css">
+  </head>
+  <body>
+
+    <!-- LOGIN -->
+    <main class="login-view" id="login-view">
+      <header class="topbar">
+        <div class="brand">hiraoka <span>SERVICES</span><b>AGENTE DE RECEPCIÓN</b></div>
+      </header>
+      <form class="login-panel" id="login-form">
+        <h1>Acceso de Agente</h1>
+        <label>Usuario
+          <input id="username" name="username" autocomplete="username" required>
+        </label>
+        <label>Contraseña
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn-primary" type="submit">Ingresar</button>
+        <p class="form-error" id="login-error" hidden></p>
+      </form>
+    </main>
+
+    <!-- APP -->
+    <section class="app-view" id="app-view" hidden>
+      <header class="topbar">
+        <div class="brand">hiraoka <span>SERVICES</span><b>AGENTE DE RECEPCIÓN</b></div>
+        <div class="topbar-end">
+          <span class="agent-pill" id="agent-pill">Agente</span>
+          <button class="icon-button" id="logout-btn" type="button" aria-label="Cerrar sesion">
+            <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M21 4v16"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="page-wrap">
+
+        <!-- FORMULARIO DE REGISTRO -->
+        <section class="form-section" id="form-section">
+          <div class="section-heading">
+            <h1>Registro de Entrada de Equipo</h1>
+            <p>Complete los datos del cliente y del equipo para generar la orden de servicio.</p>
+          </div>
+
+          <form class="registro-form" id="registro-form">
+
+            <!-- Datos del cliente -->
+            <div class="form-card">
+              <h2>
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Datos del Cliente
+              </h2>
+              <div class="field-grid">
+                <label class="field">
+                  <span>DNI <em>*</em></span>
+                  <div class="input-row">
+                    <input id="dni" type="text" maxlength="8" placeholder="12345678" required>
+                    <button class="btn-buscar" id="btn-buscar-cliente" type="button">Buscar</button>
+                  </div>
+                  <small class="field-hint" id="dni-hint"></small>
+                </label>
+                <label class="field">
+                  <span>Nombre completo <em>*</em></span>
+                  <input id="nombre" type="text" placeholder="Juan Pérez Ríos" required>
+                </label>
+                <label class="field">
+                  <span>Teléfono</span>
+                  <input id="telefono" type="tel" placeholder="987654321">
+                </label>
+                <label class="field">
+                  <span>Correo electrónico</span>
+                  <input id="email" type="email" placeholder="cliente@email.com">
+                </label>
+              </div>
+            </div>
+
+            <!-- Datos del equipo -->
+            <div class="form-card">
+              <h2>
+                <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                Datos del Equipo
+              </h2>
+              <div class="field-grid">
+                <label class="field">
+                  <span>Número de Serie (S/N) <em>*</em></span>
+                  <input id="numero_serie" type="text" placeholder="SM-S928B-001234" required>
+                </label>
+                <label class="field">
+                  <span>Marca</span>
+                  <input id="marca" type="text" placeholder="Samsung, Apple, LG...">
+                </label>
+                <label class="field span-2">
+                  <span>Modelo <em>*</em></span>
+                  <input id="modelo" type="text" placeholder="Galaxy S24 Ultra, iPhone 15 Pro..." required>
+                </label>
+              </div>
+            </div>
+
+            <!-- Problema y tecnico -->
+            <div class="form-card">
+              <h2>
+                <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Descripción del Problema
+              </h2>
+              <div class="field-grid">
+                <label class="field span-2">
+                  <span>Descripción del problema <em>*</em></span>
+                  <textarea id="descripcion" placeholder="Describa el problema que presenta el equipo..." rows="4" required></textarea>
+                </label>
+                <label class="field span-2">
+                  <span>Técnico asignado (opcional)</span>
+                  <select id="id_tecnico">
+                    <option value="">Sin asignar — se asignará posteriormente</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <p class="form-error" id="form-error" hidden></p>
+              <button class="btn-primary large" type="submit" id="btn-registrar">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                Registrar Entrada de Equipo
+              </button>
+            </div>
+
+          </form>
+        </section>
+
+        <!-- CONFIRMACION -->
+        <section class="confirm-section" id="confirm-section" hidden>
+          <div class="confirm-card">
+            <div class="confirm-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h1>¡Equipo Registrado Exitosamente!</h1>
+            <p>La orden de servicio ha sido creada. Entregue el código al cliente para que pueda hacer seguimiento.</p>
+
+            <div class="ticket-result">
+              <div class="ticket-code-block">
+                <span class="label">Código de Ticket</span>
+                <span class="ticket-code" id="result-codigo">TK-2026-XXX</span>
+              </div>
+              <div class="ticket-meta">
+                <div class="meta-item">
+                  <span class="label">Estado inicial</span>
+                  <span class="badge-recibido">Recibido</span>
+                </div>
+                <div class="meta-item">
+                  <span class="label">Entrega estimada</span>
+                  <span id="result-fecha">-</span>
+                </div>
+                <div class="meta-item">
+                  <span class="label">Cliente puede consultar en</span>
+                  <span class="portal-url">hiraokaservices.lat</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="confirm-actions">
+              <button class="btn-primary" id="btn-nuevo" type="button">Registrar otro equipo</button>
+              <button class="btn-secondary" id="btn-imprimir" type="button">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Imprimir comprobante
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <script src="/agente/app.js" defer></script>
+  </body>
+</html>

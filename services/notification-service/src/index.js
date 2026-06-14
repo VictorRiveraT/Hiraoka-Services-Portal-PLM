@@ -23,6 +23,4 @@ app.get('/notifications/health', (req, res) => {
 
 app.use('/notifications', notificationRoutes);
 
-app.listen(PORT, () => {
-  console.log('Notification Service corriendo en puerto ' + PORT);
-});
+app.listen(PORT);

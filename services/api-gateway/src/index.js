@@ -6,6 +6,12 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const proxyCache = new Map();
+const cachedProxy = (key, options) => {
+  if (!proxyCache.has(key)) proxyCache.set(key, createProxyMiddleware(options));
+  return proxyCache.get(key);
+};
+app.set('trust proxy', 1);
 
 // ── Seguridad ─────────────────────────────────────────────────
 app.use(helmet({
@@ -59,7 +65,7 @@ app.use('/api/auth', createProxyMiddleware({
 
 app.use('/api/usuarios', (req, res, next) => {
   req.url = '/api/auth/usuarios' + req.url;
-  createProxyMiddleware({
+  cachedProxy('auth-users', {
     target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
     changeOrigin: true,
     on: {
@@ -73,7 +79,7 @@ app.use('/api/usuarios', (req, res, next) => {
 
 app.use('/usuarios', (req, res, next) => {
   req.url = '/api/auth/usuarios' + req.url;
-  createProxyMiddleware({
+  cachedProxy('auth-users', {
     target: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
     changeOrigin: true,
     on: {
@@ -88,7 +94,7 @@ app.use('/usuarios', (req, res, next) => {
 // ── Proxy → Ticket Service ────────────────────────────────────
 app.use('/api/tickets', (req, res, next) => {
   req.url = '/tickets' + req.url;
-  createProxyMiddleware({
+  cachedProxy('tickets', {
     target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
     changeOrigin: true,
     on: {
@@ -102,7 +108,7 @@ app.use('/api/tickets', (req, res, next) => {
 
 app.use('/api/dashboard', (req, res, next) => {
   req.url = '/dashboard' + req.url;
-  createProxyMiddleware({
+  cachedProxy('tickets', {
     target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
     changeOrigin: true,
     on: {
@@ -140,7 +146,7 @@ app.use('/api/taller', createProxyMiddleware({
 // Proxy → Notification Service
 app.use('/api/notifications', (req, res, next) => {
   req.url = '/notifications' + req.url;
-  createProxyMiddleware({
+  cachedProxy('notifications', {
     target: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3004',
     changeOrigin: true,
     on: {
@@ -164,6 +170,35 @@ app.use('/api/legacy', createProxyMiddleware({
   },
 }));
 
+app.use('/api/repuestos', (req, res, next) => {
+  req.url = '/inventory' + req.url;
+  cachedProxy('inventory', {
+    target: process.env.LEGACY_SERVICE_URL || 'http://legacy-service:3005',
+    changeOrigin: true,
+  })(req, res, next);
+});
+
+app.use('/api/garantia', (req, res, next) => {
+  req.url = '/warranty' + req.url;
+  cachedProxy('warranty', {
+    target: process.env.LEGACY_SERVICE_URL || 'http://legacy-service:3005',
+    changeOrigin: true,
+  })(req, res, next);
+});
+
+// Proxy → Admin Service
+app.use('/admin', createProxyMiddleware({
+  target: process.env.ADMIN_SERVICE_URL || 'http://admin-service:3006',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.error('[GATEWAY] Error al conectar con admin-service:', err.message);
+      res.status(503).json({ error: 'Servicio administrativo no disponible.' });
+    },
+  },
+}));
+
+// Proxy → Admin API
 // ── Frontend público → Ticket Service ────────────────────────
 app.use('/', createProxyMiddleware({
   target: process.env.TICKET_SERVICE_URL || 'http://ticket-service:3002',
@@ -176,7 +211,4 @@ app.use((req, res) => {
 });
 
 // ── Iniciar ───────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`[api-gateway] corriendo en puerto ${PORT}`);
-  console.log(`[api-gateway] auth-service → ${process.env.AUTH_SERVICE_URL}`);
-});
+app.listen(PORT);

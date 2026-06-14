@@ -50,7 +50,26 @@
         <h1 id="results-title">Resultados de busqueda</h1>
         <p id="results-count"></p>
       </div>
+
+      <!-- Mobile: cards -->
       <div class="result-grid" id="tickets-list"></div>
+
+      <!-- Desktop: tabla (HSPP90) -->
+      <div class="results-table-wrap">
+        <table class="results-table" id="tickets-table">
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Estado</th>
+              <th>Equipo</th>
+              <th>Garantia</th>
+              <th>Detalles</th>
+            </tr>
+          </thead>
+          <tbody id="tickets-table-body"></tbody>
+        </table>
+      </div>
+
       <button class="text-button" id="btn-new-search" type="button">← Realizar otra consulta</button>
     </section>
 
@@ -91,6 +110,22 @@
       <button class="text-button detail-return" id="btn-nueva-consulta" type="button">← Nueva consulta</button>
     </section>
   </main>
+
+  <dialog class="nps-dialog" id="nps-dialog">
+    <form class="nps-form" id="nps-form">
+      <button class="nps-close" id="nps-close" type="button" aria-label="Cerrar">x</button>
+      <span class="nps-kicker">Tu opinion mejora nuestro servicio</span>
+      <h2>¿Que tan probable es que recomiendes Hiraoka Services?</h2>
+      <div class="nps-scale" id="nps-scale" aria-label="Puntuacion NPS"></div>
+      <div class="nps-scale-labels"><span>Nada probable</span><span>Muy probable</span></div>
+      <label class="field">
+        <span>Comentario opcional</span>
+        <textarea id="nps-comment" maxlength="1000" rows="4" placeholder="Cuentanos como fue tu experiencia"></textarea>
+      </label>
+      <p class="nps-message" id="nps-message" hidden></p>
+      <button class="primary-button" id="nps-submit" type="submit">Enviar encuesta</button>
+    </form>
+  </dialog>
 
   <nav class="bottom-nav" aria-label="Navegacion principal">
     <span class="bottom-item active">Consulta</span>

@@ -16,6 +16,25 @@ services:
     networks:
       - hiraoka_network
 
+  db-migrate:
+    image: postgres:16-alpine
+    container_name: hiraoka_db_migrate
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    command:
+      - sh
+      - -c
+      - until pg_isready -h postgres -U ${DB_USER} -d ${DB_NAME}; do sleep 2; done; psql -v ON_ERROR_STOP=1 -h postgres -U ${DB_USER} -d ${DB_NAME} -f /migrations/01_init.sql; psql -v ON_ERROR_STOP=1 -h postgres -U ${DB_USER} -d ${DB_NAME} -f /migrations/02_audit.sql; psql -v ON_ERROR_STOP=1 -h postgres -U ${DB_USER} -d ${DB_NAME} -f /migrations/03_seed.sql
+    volumes:
+      - ./services/auth-service/src/db/init.sql:/migrations/01_init.sql:ro
+      - ./services/auth-service/src/db/audit.sql:/migrations/02_audit.sql:ro
+      - ./services/auth-service/src/db/seed.sql:/migrations/03_seed.sql:ro
+    depends_on:
+      - postgres
+    networks:
+      - hiraoka_network
+
   auth-service:
     build: ./services/auth-service
     container_name: hiraoka_auth
@@ -46,12 +65,14 @@ services:
       - TALLER_SERVICE_URL=http://taller-service:3003
       - NOTIFICATION_SERVICE_URL=http://notification-service:3004
       - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
+      - ADMIN_SERVICE_URL=http://admin-service:3006
     depends_on:
       - auth-service
       - ticket-service
       - taller-service
       - notification-service
       - legacy-service
+      - admin-service
     networks:
       - hiraoka_network
 
@@ -74,9 +95,12 @@ services:
       - LEGACY_CIRCUIT_BREAKER_FAILURES=${LEGACY_CIRCUIT_BREAKER_FAILURES:-3}
       - LEGACY_CIRCUIT_BREAKER_RESET_MS=${LEGACY_CIRCUIT_BREAKER_RESET_MS:-30000}
     depends_on:
-      - postgres
-      - notification-service
-      - legacy-service
+      db-migrate:
+        condition: service_completed_successfully
+      notification-service:
+        condition: service_started
+      legacy-service:
+        condition: service_started
     networks:
       - hiraoka_network
 
@@ -140,6 +164,23 @@ services:
         timeout: 3s
         retries: 5
         start_period: 5s
+      networks:
+        - hiraoka_network
+
+  admin-service:
+      build: ./services/admin-service
+      container_name: hiraoka_admin
+      restart: unless-stopped
+      environment:
+        - NODE_ENV=development
+        - PORT=3006
+        - DB_HOST=postgres
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=${DB_NAME}
+        - JWT_SECRET=${JWT_SECRET}
+      depends_on:
+        - postgres
       networks:
         - hiraoka_network
 

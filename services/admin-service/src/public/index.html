@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hiraoka Services - Panel Administrativo</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+  </head>
+  <body>
+
+    <!-- ── LOGIN ── -->
+    <main class="login-view" id="login-view">
+      <header class="topbar">
+        <div class="brand">hiraoka <span>SERVICES</span><b>PANEL ADMINISTRATIVO</b></div>
+      </header>
+      <form class="login-panel" id="login-form">
+        <h1>Acceso Administrativo</h1>
+        <label>Usuario
+          <input id="username" name="username" autocomplete="username" required>
+        </label>
+        <label>Contraseña
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn-primary" type="submit">Ingresar</button>
+        <p class="form-error" id="login-error" hidden></p>
+      </form>
+    </main>
+
+    <!-- ── APP ── -->
+    <section class="app-view" id="app-view" hidden>
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="brand">hiraoka <span>SERVICES</span><b>PANEL ADMINISTRATIVO</b></div>
+        <div class="topbar-end">
+          <button class="notif-btn" id="notif-btn" type="button" aria-label="Notificaciones">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-dot"></span>
+          </button>
+          <div class="divider-v"></div>
+          <div class="user-pill">
+            <div class="avatar-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span id="role-label">Rol: Gerente de Operaciones</span>
+          </div>
+          <button class="icon-button" id="logout-btn" type="button" aria-label="Cerrar sesion">
+            <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M21 4v16"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="app-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <button class="side-item active" id="nav-dashboard" type="button">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard KPI
+          </button>
+          <button class="side-item" id="nav-usuarios" type="button">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Gestión de Usuarios
+          </button>
+          <button class="side-item" id="nav-historial" type="button">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+            Historial de Producto
+          </button>
+          <button class="side-item" id="nav-tickets" type="button">
+            <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            Tickets Generales
+          </button>
+          <button class="side-item" id="nav-config" type="button">
+            <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 16 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.31.31.5.66.6 1.1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.4Z"/></svg>
+            Configuracion
+          </button>
+        </aside>
+
+        <!-- ── VISTA: DASHBOARD KPI (HSPP108) ── -->
+        <section class="main-content" id="view-dashboard">
+          <div class="page-heading">
+            <h1>Panel de Control y Analitica Gerencial</h1>
+            <p>Monitoreo en tiempo real de rendimiento de taller y satisfaccion del cliente</p>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <h3>Tiempo Promedio de Resolucion</h3>
+                <div class="kpi-icon">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value">4.2 dias</div>
+              <div class="kpi-sub green">↓ 12% respecto al mes anterior</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <h3>Tasa de Satisfaccion (NPS)</h3>
+                <div class="kpi-icon">
+                  <svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value">+74</div>
+              <div class="kpi-sub green-dark">Nivel de excelencia operativa</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <h3>Reduccion de Consultas al Call Center</h3>
+                <div class="kpi-icon">
+                  <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.37 19a19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.1 4.18 2 2 0 0 1 5.08 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value">-38%</div>
+              <div class="kpi-sub green">Gracias al Portal Publico de Consulta Autonoma</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <h3>Tecnico Destacado del Mes</h3>
+                <div class="kpi-icon">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+                </div>
+              </div>
+              <div class="kpi-value" style="font-size:18px;">Jander Huamani</div>
+              <div class="kpi-sub muted">84 tickets cerrados con conformidad</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-grid">
+
+            <!-- Barras horizontales: distribucion por estado -->
+            <div class="chart-card">
+              <h2>Distribucion de Tickets por Estado Activo</h2>
+              <div class="bar-list">
+                <div class="bar-item">
+                  <div class="bar-header">
+                    <span>Listo para retiro</span>
+                    <strong class="green-dark">45%</strong>
+                  </div>
+                  <div class="bar-track">
+                    <div class="bar-fill listo" style="width:45%"></div>
+                  </div>
+                  <small class="muted">245 tickets completados listos para entrega</small>
+                </div>
+                <div class="bar-item">
+                  <div class="bar-header">
+                    <span>En reparacion</span>
+                    <strong class="red">35%</strong>
+                  </div>
+                  <div class="bar-track">
+                    <div class="bar-fill reparando" style="width:35%"></div>
+                  </div>
+                  <small class="muted">190 equipos actualmente en laboratorios</small>
+                </div>
+                <div class="bar-item">
+                  <div class="bar-header">
+                    <span>En diagnostico</span>
+                    <strong class="orange">20%</strong>
+                  </div>
+                  <div class="bar-track">
+                    <div class="bar-fill diagnosticando" style="width:20%"></div>
+                  </div>
+                  <small class="muted">108 tickets en proceso de evaluacion inicial</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Donut SVG: eficiencia de repuestos -->
+            <div class="chart-card donut-card">
+              <h2>Eficiencia de Repuestos en Almacen</h2>
+              <p class="chart-sub muted">Relacion entre piezas disponibles en almacen vs. pedidos especiales a proveedor</p>
+              <div class="donut-wrap">
+                <svg class="donut-svg" viewBox="0 0 200 200" aria-hidden="true">
+                  <!-- Fondo -->
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#E0E0E0" stroke-width="28"/>
+                  <!-- Segmento naranja (25%) -->
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#E65100" stroke-width="28"
+                    stroke-dasharray="110 330" stroke-dashoffset="0" stroke-linecap="butt"
+                    transform="rotate(-90 100 100)"/>
+                  <!-- Segmento verde (75%) -->
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#558B2F" stroke-width="28"
+                    stroke-dasharray="330 110" stroke-dashoffset="-110" stroke-linecap="butt"
+                    transform="rotate(-90 100 100)"/>
+                  <!-- Centro -->
+                  <text x="100" y="96" text-anchor="middle" font-size="26" font-weight="700" fill="#212121">75%</text>
+                  <text x="100" y="114" text-anchor="middle" font-size="11" fill="#9E9E9E">Eficiencia</text>
+                </svg>
+                <div class="donut-legend">
+                  <div class="legend-row">
+                    <span class="legend-dot" style="background:#558B2F"></span>
+                    <span>Repuestos en Stock (75%)</span>
+                  </div>
+                  <div class="legend-row">
+                    <span class="legend-dot" style="background:#E65100"></span>
+                    <span>Pedidos Especiales (25%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── VISTA: GESTION DE USUARIOS (HSPP109) ── -->
+        <section class="main-content" id="view-usuarios" hidden>
+          <div class="action-header">
+            <h1>Administracion de Personal de Soporte</h1>
+            <button class="btn-primary sm" id="btn-crear-usuario" type="button">+ Crear Nuevo Usuario</button>
+          </div>
+
+          <!-- Filtros -->
+          <div class="filter-bar">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input id="user-search" type="search" placeholder="Buscar por nombre o correo...">
+            </div>
+            <select id="filter-rol">
+              <option value="">Filtrar por Rol</option>
+              <option value="Técnico Taller">Tecnico Taller</option>
+              <option value="Agente Call Center">Agente Call Center</option>
+              <option value="Técnico Externo">Tecnico Externo</option>
+              <option value="Gerente">Gerente</option>
+              <option value="Administrador">Administrador</option>
+            </select>
+            <select id="filter-estado">
+              <option value="">Estado de Cuenta</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+          </div>
+
+          <!-- Tabla usuarios -->
+          <div class="table-wrap">
+            <table class="data-table" id="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Colaborador</th>
+                  <th>Correo Electronico</th>
+                  <th>Rol Asignado</th>
+                  <th>Estado de Cuenta</th>
+                  <th>Ultimo Acceso</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <!-- poblado por JS -->
+              </tbody>
+            </table>
+            <div class="table-footer">
+              <span id="users-count-label">Mostrando 0 de 0 usuarios</span>
+              <div class="pagination">
+                <button class="page-btn" id="page-prev" type="button">Anterior</button>
+                <span class="page-info" id="page-info">Pag. 1</span>
+                <button class="page-btn" id="page-next" type="button">Siguiente</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── VISTA: HISTORIAL DE PRODUCTO (HSPP110) ── -->
+        <section class="main-content" id="view-historial" hidden>
+          <h1 class="page-title">Historial Tecnico y Trazabilidad del Producto</h1>
+
+          <!-- Busqueda -->
+          <div class="search-card">
+            <h2>Consulta Avanzada de Trazabilidad por Numero de Serie</h2>
+            <div class="historial-search-row">
+              <div class="search-field grow">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input id="historial-serial" type="text" placeholder="Ingrese el S/N del dispositivo (Ej: SM-S928B-001234)">
+              </div>
+              <button class="btn-primary" id="btn-historial-buscar" type="button">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                Consultar Historial
+              </button>
+            </div>
+          </div>
+
+          <!-- Asset Banner -->
+          <div class="asset-banner" id="asset-banner" hidden>
+            <div class="asset-info">
+              <div class="asset-field">
+                <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                <span class="label">Equipo:</span>
+                <span id="asset-equipo">-</span>
+              </div>
+              <div class="asset-sep"></div>
+              <div class="asset-field">
+                <svg viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg>
+                <span class="label">S/N:</span>
+                <span id="asset-sn" class="mono">-</span>
+              </div>
+              <div class="asset-sep"></div>
+              <div class="asset-field">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="label">Cliente:</span>
+                <span id="asset-cliente">-</span>
+              </div>
+            </div>
+            <div class="warranty-chip-green" id="asset-garantia">
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Garantia de Fabrica: Activa
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div id="timeline-section" hidden>
+            <h2 class="section-title">Secuencia de Intervenciones</h2>
+            <div class="timeline" id="timeline-list"></div>
+          </div>
+
+          <div class="empty-historial" id="empty-historial">
+            <p>Ingrese un numero de serie para consultar el historial de intervenciones del equipo.</p>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <script src="/admin/app.js" defer></script>
+  </body>
+</html>

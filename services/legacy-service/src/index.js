@@ -23,6 +23,4 @@ app.use('/inventory', inventoryRoutes);
 app.use('/warranty', warrantyRoutes);
 app.use('/spare-parts', sparePartsRoutes);
 
-app.listen(PORT, () => {
-  console.log('Legacy Service corriendo en puerto ' + PORT);
-});
+app.listen(PORT);

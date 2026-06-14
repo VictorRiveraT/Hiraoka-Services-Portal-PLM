@@ -117,10 +117,26 @@ exports.logout = async (req, res) => {
 
 exports.listarUsuarios = async (req, res) => {
   try {
-    const admin = await exigirAdministrador(req, res);
-    if (!admin) return;
-
     const { rol, activo, q } = req.query;
+    const solicitante = await obtenerAdmin(req.usuario && req.usuario.id_usuario);
+    const puedeConsultarTecnicos =
+      solicitante &&
+      solicitante.activo &&
+      solicitante.rol === 'Agente' &&
+      rol === 'Tecnico' &&
+      activo === undefined &&
+      !q;
+
+    if (
+      !solicitante ||
+      !solicitante.activo ||
+      (solicitante.rol !== 'Administrador' && !puedeConsultarTecnicos)
+    ) {
+      return res.status(403).json({
+        error: 'Solo Administradores o Agentes consultando tecnicos pueden listar usuarios.',
+      });
+    }
+
     const filtros = [];
     const params = [];
 

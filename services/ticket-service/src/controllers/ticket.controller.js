@@ -14,6 +14,7 @@ const {
   getSparePartsByTicket,
   getWarranty,
 } = require("../services/legacyClient");
+const crypto = require("crypto");
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -189,6 +190,12 @@ const parsePeriodo = (query) => {
   return { desde, hasta };
 };
 
+const seudonimizarCliente = (idCliente) =>
+  crypto
+    .createHmac("sha256", process.env.JWT_SECRET || "hiraoka-nps")
+    .update(String(idCliente))
+    .digest("hex");
+
 const obtenerUsuarioConRol = async (client, idUsuario) => {
   if (!esUuidValido(idUsuario)) {
     return null;
@@ -353,7 +360,10 @@ const getTicketsByDni = async (req, res) => {
         t.estado,
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
-        p.nombre AS producto
+        p.nombre AS producto,
+        c.nombre AS cliente,
+        c.telefono AS telefono,
+        c.email AS email
       FROM tickets t
       JOIN clientes c ON t.id_cliente = c.id_cliente
       JOIN productos p ON t.id_producto = p.id_producto
@@ -1192,9 +1202,7 @@ const getMetricasDashboard = async (req, res) => {
          LIMIT 1`,
         [periodo.desde, periodo.hasta]
       ),
-      pool.query(
-        `SELECT to_regclass('public.encuestas_satisfaccion') AS tabla`
-      ),
+      pool.query(`SELECT to_regclass('public.nps_respuestas') AS tabla`),
     ]);
 
     let npsData = {
@@ -1210,14 +1218,14 @@ const getMetricasDashboard = async (req, res) => {
       const npsResult = await pool.query(
         `SELECT
           COUNT(*)::int AS total_respuestas,
-          COUNT(*) FILTER (WHERE puntaje >= 9)::int AS promotores,
-          COUNT(*) FILTER (WHERE puntaje BETWEEN 7 AND 8)::int AS pasivos,
-          COUNT(*) FILTER (WHERE puntaje <= 6)::int AS detractores,
+          COUNT(*) FILTER (WHERE puntuacion >= 9)::int AS promotores,
+          COUNT(*) FILTER (WHERE puntuacion BETWEEN 7 AND 8)::int AS pasivos,
+          COUNT(*) FILTER (WHERE puntuacion <= 6)::int AS detractores,
           ROUND((
-            ((COUNT(*) FILTER (WHERE puntaje >= 9))::numeric / NULLIF(COUNT(*), 0)) -
-            ((COUNT(*) FILTER (WHERE puntaje <= 6))::numeric / NULLIF(COUNT(*), 0))
+            ((COUNT(*) FILTER (WHERE puntuacion >= 9))::numeric / NULLIF(COUNT(*), 0)) -
+            ((COUNT(*) FILTER (WHERE puntuacion <= 6))::numeric / NULLIF(COUNT(*), 0))
           ) * 100, 2) AS tasa_nps
-         FROM encuestas_satisfaccion
+         FROM nps_respuestas
          WHERE fecha_respuesta BETWEEN $1 AND $2`,
         [periodo.desde, periodo.hasta]
       );
@@ -1249,6 +1257,13 @@ const getMetricasDashboard = async (req, res) => {
 
 // POST /tickets - FEAT05: Registro de entrada de equipo
 const crearTicket = async (req, res) => {
+  if (!['Agente', 'Administrador'].includes(req.user?.rol)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Solo un Agente o Administrador puede registrar tickets.',
+    });
+  }
+
   const { cliente, equipo, descripcion_problema, id_tecnico } = req.body;
 
   if (!cliente?.dni || !cliente?.nombre || !equipo?.numero_serie || !equipo?.modelo || !descripcion_problema) {
@@ -1315,27 +1330,46 @@ const crearTicket = async (req, res) => {
       id_producto = nuevoProducto.rows[0].id_producto;
     }
 
+    // Serializa la asignacion del correlativo publico para evitar duplicados.
+    await client.query("SELECT pg_advisory_xact_lock($1)", [2026]);
+    const codigoResult = await client.query(
+      `SELECT 'TK-' || EXTRACT(YEAR FROM NOW())::int || '-' ||
+        LPAD((
+          COALESCE(MAX(NULLIF(SPLIT_PART(codigo_ticket, '-', 3), '')::int), 0) + 1
+        )::text, 3, '0') AS codigo
+       FROM tickets
+       WHERE codigo_ticket LIKE 'TK-' || EXTRACT(YEAR FROM NOW())::int || '-%'`
+    );
+
     // 3. Crear ticket
     const nuevoTicket = await client.query(
       `INSERT INTO tickets
-        (id_cliente, id_producto, id_tecnico, estado, descripcion_problema, fecha_estimada_entrega)
-       VALUES ($1, $2, $3, 'Recibido', $4, NOW() + INTERVAL '7 days')
-       RETURNING id_ticket, estado, fecha_ingreso, fecha_estimada_entrega`,
-      [id_cliente, id_producto, id_tecnico || null, descripcion_problema]
+        (codigo_ticket, id_cliente, id_producto, id_tecnico, estado, descripcion_problema, fecha_estimada_entrega, creado_por)
+       VALUES ($1, $2, $3, $4, 'Recibido', $5, NOW() + INTERVAL '7 days', $6)
+       RETURNING id_ticket, codigo_ticket, estado, fecha_ingreso, fecha_estimada_entrega`,
+      [
+        codigoResult.rows[0].codigo,
+        id_cliente,
+        id_producto,
+        id_tecnico || null,
+        descripcion_problema,
+        req.user?.id_usuario || null,
+      ]
     );
 
     const ticket = nuevoTicket.rows[0];
 
-    // 4. Registrar en audit_log
-    await client.query(
-      `INSERT INTO log_auditoria (id_usuario, accion, tabla_afectada, registro_id, detalle)
-       VALUES ($1, 'CREATE', 'tickets', $2, $3)`,
-      [
-        null,
-        ticket.id_ticket,
-        JSON.stringify({ estado: 'Recibido', cliente: cliente.dni, producto: equipo.numero_serie }),
-      ]
-    );
+    await registrarAuditoria(client, {
+      idUsuario: req.user?.id_usuario || null,
+      accion: "CREAR_TICKET",
+      idEntidad: ticket.id_ticket,
+      detalle: {
+        estado: "Recibido",
+        cliente: cliente.dni,
+        producto: equipo.numero_serie,
+      },
+      ip: req.ip,
+    });
 
     await client.query('COMMIT');
 
@@ -1344,6 +1378,7 @@ const crearTicket = async (req, res) => {
       message: 'Ticket registrado correctamente.',
       data: {
         id_ticket: ticket.id_ticket,
+        codigo_ticket: ticket.codigo_ticket,
         estado: ticket.estado,
         fecha_ingreso: ticket.fecha_ingreso,
         fecha_estimada_entrega: ticket.fecha_estimada_entrega,
@@ -1356,6 +1391,108 @@ const crearTicket = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error interno al registrar el ticket.',
+    });
+  } finally {
+    client.release();
+  }
+};
+
+// POST /tickets/:id/nps - FEAT15: Encuesta NPS para tickets entregados
+const responderNps = async (req, res) => {
+  const lookup = getTicketLookup(req.params.id);
+  const puntuacion = Number(req.body?.puntuacion);
+  const comentarioEsValido =
+    req.body?.comentario === undefined || typeof req.body.comentario === "string";
+  const comentario =
+    typeof req.body?.comentario === "string" ? req.body.comentario.trim() : "";
+
+  if (!lookup.uuid && !lookup.codigo) {
+    return res.status(400).json({
+      success: false,
+      message: "El ticket debe tener formato UUID o codigo TK-AAAA-000.",
+    });
+  }
+  if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 10) {
+    return res.status(400).json({
+      success: false,
+      message: "La puntuacion debe ser un numero entero entre 1 y 10.",
+    });
+  }
+  if (!comentarioEsValido || comentario.length > 1000) {
+    return res.status(400).json({
+      success: false,
+      message: "El comentario debe ser texto y no puede superar los 1000 caracteres.",
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const ticketResult = await client.query(
+      `SELECT id_ticket, id_cliente, estado, encuesta_completada
+       FROM tickets
+       WHERE
+        ($1::uuid IS NOT NULL AND id_ticket = $1::uuid)
+        OR ($2::text IS NOT NULL AND codigo_ticket = $2)
+       FOR UPDATE`,
+      [lookup.uuid, lookup.codigo]
+    );
+    const ticket = ticketResult.rows[0];
+
+    if (!ticket) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Ticket no encontrado." });
+    }
+    if (ticket.estado !== "Entregado") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        success: false,
+        message: "La encuesta solo puede responderse cuando el ticket esta Entregado.",
+      });
+    }
+    if (ticket.encuesta_completada) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        success: false,
+        message: "La encuesta de este ticket ya fue respondida.",
+      });
+    }
+
+    const respuesta = await client.query(
+      `INSERT INTO nps_respuestas
+        (id_ticket, cliente_seudonimo, puntuacion, comentario)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id_respuesta, puntuacion, comentario, fecha_respuesta`,
+      [
+        ticket.id_ticket,
+        seudonimizarCliente(ticket.id_cliente),
+        puntuacion,
+        comentario || null,
+      ]
+    );
+    await client.query(
+      "UPDATE tickets SET encuesta_completada = TRUE WHERE id_ticket = $1",
+      [ticket.id_ticket]
+    );
+    await client.query("COMMIT");
+
+    return res.status(201).json({
+      success: true,
+      message: "Gracias por completar la encuesta.",
+      data: respuesta.rows[0],
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    if (error.code === "23505") {
+      return res.status(409).json({
+        success: false,
+        message: "La encuesta de este ticket ya fue respondida.",
+      });
+    }
+    console.error("[ticket-service] Error al registrar NPS:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno al registrar la encuesta.",
     });
   } finally {
     client.release();
@@ -1375,4 +1512,5 @@ module.exports = {
   getHistorialProducto,
   getMetricasDashboard,
   crearTicket,
-};
+  responderNps,
+ };

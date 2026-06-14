@@ -34,7 +34,11 @@ VALUES (
   '$2b$12$eB6wPhbN48aqwg80ntpA7.PfErQ8ju3i42p/ZHlxypkGtQ1AlE3wa',
   (SELECT id_rol FROM roles WHERE nombre = 'Tecnico' LIMIT 1)
 )
-ON CONFLICT (username) DO NOTHING;
+ON CONFLICT (username) DO UPDATE SET
+  nombre_completo = EXCLUDED.nombre_completo,
+  password_hash = EXCLUDED.password_hash,
+  id_rol = EXCLUDED.id_rol,
+  activo = TRUE;
 
 INSERT INTO usuarios (id_usuario, nombre_completo, username, password_hash, id_rol)
 VALUES (
@@ -44,7 +48,25 @@ VALUES (
   '$2b$12$eB6wPhbN48aqwg80ntpA7.PfErQ8ju3i42p/ZHlxypkGtQ1AlE3wa',
   (SELECT id_rol FROM roles WHERE nombre = 'Administrador' LIMIT 1)
 )
-ON CONFLICT (username) DO NOTHING;
+ON CONFLICT (username) DO UPDATE SET
+  nombre_completo = EXCLUDED.nombre_completo,
+  password_hash = EXCLUDED.password_hash,
+  id_rol = EXCLUDED.id_rol,
+  activo = TRUE;
+
+INSERT INTO usuarios (id_usuario, nombre_completo, username, password_hash, id_rol)
+VALUES (
+  'b0000000-0000-0000-0000-000000000002',
+  'Agente Hiraoka',
+  'agente',
+  '$2b$12$eB6wPhbN48aqwg80ntpA7.PfErQ8ju3i42p/ZHlxypkGtQ1AlE3wa',
+  (SELECT id_rol FROM roles WHERE nombre = 'Agente' LIMIT 1)
+)
+ON CONFLICT (username) DO UPDATE SET
+  nombre_completo = EXCLUDED.nombre_completo,
+  password_hash = EXCLUDED.password_hash,
+  id_rol = EXCLUDED.id_rol,
+  activo = TRUE;
 
 
 -- ============================================================

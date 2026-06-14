@@ -43,7 +43,7 @@ body {
   min-height: 100vh;
   color: var(--text);
   background: var(--page);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
   font-size: 14px;
 }
 
@@ -254,6 +254,7 @@ input {
   color: var(--muted);
 }
 
+/* ── Resultados: cards mobile ── */
 .result-grid {
   max-width: 980px;
   margin: 0 auto 42px;
@@ -298,6 +299,128 @@ input {
 .ticket-result .action-copy {
   color: var(--red);
   font-weight: 500;
+}
+
+.ticket-result .meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.ticket-result .meta-equipo {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.ticket-result .meta-equipo span {
+  font-weight: 700;
+}
+
+/* ── Resultados: tabla desktop (HSPP90) ── */
+.results-table-wrap {
+  display: none;
+  max-width: 980px;
+  margin: 0 auto 42px;
+  overflow-x: auto;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #EDEDED;
+  border-radius: var(--radius-card);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.results-table thead tr {
+  background: #F5FBF5;
+  border-bottom: 1px solid #EDEDED;
+}
+
+.results-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.results-table tbody tr {
+  border-bottom: 1px solid #EDEDED;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+
+.results-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.results-table tbody tr:hover {
+  background: #F5FBF5;
+}
+
+.results-table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.results-table td.col-ticket {
+  font-weight: 700;
+}
+
+.results-table td.col-details {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.detail-parts {
+  color: #E65100;
+}
+
+.detail-quality {
+  color: var(--success);
+}
+
+/* ── Badges de garantía ── */
+.warranty-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.warranty-activa {
+  background: #E8F5E9;
+  color: #1B5E20;
+  border-color: #C8E6C9;
+}
+
+.warranty-expirada {
+  background: #FFEBEE;
+  color: #CC0000;
+  border-color: #FFCDD2;
+}
+
+.warranty-por-vencer {
+  background: #FFF8E1;
+  color: #F57F17;
+  border-color: #FFE082;
+}
+
+.warranty-loading {
+  background: #F5F5F5;
+  color: #9E9E9E;
+  border-color: #E0E0E0;
 }
 
 .badge {
@@ -682,6 +805,15 @@ body.mode-detail .outline-top {
   .hero h1 {
     font-size: 30px;
   }
+
+  /* Desktop: ocultar cards, mostrar tabla */
+  .result-grid {
+    display: none;
+  }
+
+  .results-table-wrap {
+    display: block;
+  }
 }
 
 @media (max-width: 760px) {
@@ -727,4 +859,113 @@ body.mode-detail .outline-top {
   .empty-card {
     margin-top: 82px;
   }
+}
+
+.nps-dialog {
+  width: min(560px, calc(100% - 32px));
+  border: 0;
+  border-radius: 24px;
+  padding: 0;
+  box-shadow: 0 28px 80px rgba(20, 20, 30, 0.28);
+}
+
+.nps-dialog::backdrop {
+  background: rgba(18, 20, 28, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.nps-form {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  padding: 34px;
+}
+
+.nps-form h2 {
+  margin: 0;
+  font-size: clamp(22px, 4vw, 30px);
+}
+
+.nps-kicker {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nps-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f3f6;
+  cursor: pointer;
+}
+
+.nps-scale {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+
+.nps-score {
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  font-weight: 800;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.nps-score:hover,
+.nps-score.selected {
+  border-color: var(--red);
+  background: var(--red);
+  color: var(--white);
+  transform: translateY(-2px);
+}
+
+.nps-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -12px;
+  color: #777;
+  font-size: 12px;
+}
+
+.nps-form textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.nps-message {
+  margin: 0;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.nps-message.success {
+  color: #177245;
+}
+
+@media (max-width: 560px) {
+  .nps-form { padding: 28px 20px 22px; }
+  .nps-scale { grid-template-columns: repeat(5, 1fr); }
+}
+
+html { scroll-behavior: smooth; scrollbar-color: #b8bdc7 #f2f3f6; }
+button, input, textarea, select, .ticket-result, .timeline-card {
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease,
+    box-shadow 180ms ease, transform 180ms ease;
+}
+button:hover:not(:disabled) { transform: translateY(-1px); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible,
+.ticket-result:focus-visible {
+  outline: 3px solid rgba(204, 0, 0, 0.22);
+  outline-offset: 3px;
 }

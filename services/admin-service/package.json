@@ -1,7 +1,7 @@
 {
-  "name": "taller-service",
+  "name": "admin-service",
   "version": "1.0.0",
-  "description": "Microservicio PWA para tecnicos de taller - Hiraoka Services",
+  "description": "Microservicio Panel Administrativo - Hiraoka Services",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js"
