@@ -51,6 +51,8 @@ const ESTADO_LABELS = {
 
 const FORM_STATES = ['Diagnosticando', 'Reparando', 'Listo'];
 
+const TICKET_ESTADOS = ['Recibido', 'Diagnosticando', 'Reparando', 'Listo', 'Entregado'];
+
 let token = sessionStorage.getItem('taller_token') || '';
 let tickets = [];
 let selectedTicket = null;
@@ -107,6 +109,145 @@ function updateConnectionState() {
   const online = navigator.onLine;
   document.getElementById('sync-banner').hidden = online;
   document.getElementById('sync-pill').textContent = online ? 'Sincronizado' : 'Sin sincronizar';
+}
+
+document.getElementById('evidence-upload').addEventListener('change', async (event) => {
+    const files = event.target.files;
+    if (files.length === 0) return;
+
+    if (!selectedTicket) {
+        alert('No hay un ticket seleccionado.');
+        return;
+    }
+    const ticketId = selectedTicket.id_ticket; 
+    
+    const formData = new FormData();
+    for (let file of files) {
+        formData.append('fotos', file);
+    }
+    formData.append('estado', selectedNextState || selectedTicket.estado);
+
+    try {
+        const response = await fetch(`/api/tickets/${ticketId}/evidencias`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const etapa = data.data?.estado || selectedNextState || selectedTicket.estado;
+            selectedTicket.etapas ||= {};
+            selectedTicket.etapas[etapa] ||= { observaciones: [], evidencias: [] };
+            selectedTicket.etapas[etapa].evidencias.push(...(data.evidencias || []));
+            renderEvidenceGallery(data.evidencias, false);
+            showToast('Fotos subidas correctamente');
+        } else {
+            alert('Error al subir las imágenes de evidencia.');
+        }
+    } catch (error) {
+        console.error('Error de red:', error);
+    }
+});
+
+function setUpdateFormMode(mode, ticket, estado) {
+   const obsInput = document.getElementById('observations');
+   const obsLabel = document.querySelector('label[for="observations"]'); // Capturamos el título
+   const saveBtn = document.getElementById('save-button');
+   const evidenceUploadLabel = document.querySelector('.evidence-button');
+   const evidenceInput = document.getElementById('evidence-upload');
+   const gallery = document.getElementById('evidence-gallery');
+   
+   // 1. Restaurar visibilidad por defecto antes de aplicar la lógica
+   if (obsLabel) obsLabel.style.display = 'block';
+   if (obsInput) obsInput.style.display = 'block';
+   if (gallery) gallery.style.display = 'flex';
+
+   // 2. Lógica especial si el estado es "Listo para retiro" o "Entregado"
+   if (estado === 'Listo' || estado === 'Entregado') {
+      if (obsLabel) obsLabel.style.display = 'none';
+      if (obsInput) {
+          obsInput.style.display = 'none';
+          obsInput.required = false; // Fundamental: quitamos el required para que el form deje guardar
+          obsInput.value = 'Equipo listo para entrega al cliente.'; // Nota interna automática
+      }
+      if (evidenceUploadLabel) evidenceUploadLabel.style.display = 'none';
+      if (evidenceInput) evidenceInput.style.display = 'none';
+      if (gallery) gallery.style.display = 'none';
+
+      // Si apenas vamos a pasar a "Listo", mostramos el botón guardar. Si ya es pasado, lo ocultamos.
+      if (mode === 'edit') {
+          saveBtn.style.display = 'block';
+          saveBtn.disabled = false;
+          clearMessage();
+      } else {
+          saveBtn.style.display = 'none';
+      }
+      return; // Cortamos la función aquí porque ya configuramos este estado
+   }
+
+   // 3. Lógica para Diagnóstico y Reparación
+   if (mode === 'edit') {
+      if (obsLabel) obsLabel.textContent = 'Observaciones Tecnicas (Requerido)'; // Título de acción
+      obsInput.readOnly = false;
+      obsInput.required = true;
+      obsInput.value = '';
+      saveBtn.style.display = 'block';
+      
+      if (evidenceUploadLabel) evidenceUploadLabel.style.display = 'inline-block';
+      if (evidenceInput) evidenceInput.style.display = ''; 
+      
+      renderEvidenceGallery([], true);
+      saveBtn.disabled = false;
+      clearMessage();
+   } else if (mode === 'view') {
+      const data = ticket._stateData[estado] || { observaciones: '', evidencias: [] };
+      if (obsLabel) obsLabel.textContent = 'Observaciones registradas en esta etapa:'; // Título de historial
+      obsInput.readOnly = true;
+      obsInput.required = false; // Quitamos validación en modo lectura
+      obsInput.value = data.observaciones || 'No se registraron observaciones en esta etapa.';
+      
+      saveBtn.style.display = 'none';
+      const canUploadCurrentEvidence = estado === ticket.estado;
+      if (evidenceUploadLabel) evidenceUploadLabel.style.display = canUploadCurrentEvidence ? 'inline-block' : 'none';
+      if (evidenceInput) evidenceInput.style.display = 'none';
+      
+      renderEvidenceGallery(data.evidencias, true);
+   }
+}
+
+function renderEvidenceGallery(urls, clear = true) {
+    const gallery = document.getElementById('evidence-gallery');
+    if (clear) gallery.innerHTML = '';
+    
+    if (urls && urls.length > 0) {
+        urls.forEach((url, index) => {
+            const img = document.createElement('img');
+            img.src = url; 
+            img.className = 'evidence-thumbnail';
+            // ¡FÍJATE AQUÍ! Ya no hay etiqueta <a>. El clic dispara el visor.
+            img.addEventListener('click', () => openLightbox(urls, index));
+            gallery.appendChild(img);
+        });
+    }
+}
+
+// ── Lógica del ojito para la contraseña ──
+const togglePwd = document.getElementById('toggle-pwd');
+const pwdInput = document.getElementById('password');
+
+if (togglePwd && pwdInput) {
+  togglePwd.addEventListener('click', () => {
+    const isText = pwdInput.type === 'text';
+    
+    // Cambiamos el tipo de input
+    pwdInput.type = isText ? 'password' : 'text';
+    
+    // Cambiamos el ícono SVG
+    togglePwd.innerHTML = isText 
+      ? `<svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>` 
+      : `<svg viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
+  });
 }
 
 // ── Navegacion entre vistas ───────────────────────────────────────────────────
@@ -261,32 +402,57 @@ function renderStateButtons(ticket) {
   stateGrid.innerHTML = '';
   selectedNextState = '';
 
+  const currentIndex = Math.max(0, TICKET_ESTADOS.indexOf(ticket.estado));
+
   FORM_STATES.forEach((estado) => {
+    const stateIndex = TICKET_ESTADOS.indexOf(estado);
+    const isPastOrCurrent = stateIndex <= currentIndex;
     const isCurrent = ticket.estado === estado;
     const isNext = (ticket.siguientes_estados || []).includes(estado);
+    
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `state-button${isCurrent ? ' current' : ''}${isNext ? ' next' : ''}`;
+    
+    // Le damos una clase especial a los botones del pasado
+    if (isPastOrCurrent && !isCurrent) {
+        button.classList.add('past');
+    }
+
     button.textContent = ESTADO_LABELS[estado];
-    button.disabled = !isNext;
+    // Se puede clickear si es el siguiente estado (para editar) o si es un estado pasado (para ver)
+    button.disabled = !isNext && !isPastOrCurrent;
 
     if (isNext && !selectedNextState) {
       selectedNextState = estado;
       button.classList.add('selected');
+      setUpdateFormMode('edit', ticket, estado);
     }
 
     button.addEventListener('click', () => {
-      selectedNextState = estado;
       document.querySelectorAll('.state-button').forEach((item) => item.classList.remove('selected'));
       button.classList.add('selected');
-      saveButton.disabled = false;
-      clearMessage();
+      
+      if (isNext) {
+        selectedNextState = estado;
+        setUpdateFormMode('edit', ticket, estado);
+      } else if (isPastOrCurrent) {
+        selectedNextState = ''; // Es solo lectura, no permite guardar
+        setUpdateFormMode('view', ticket, estado);
+      }
     });
 
     stateGrid.appendChild(button);
   });
-
-  saveButton.disabled = !selectedNextState;
+  
+  // Si ya no hay estados siguientes (ej. Listo para retiro), mostramos el actual en modo lectura
+  if (!selectedNextState && FORM_STATES.includes(ticket.estado)) {
+      setUpdateFormMode('view', ticket, ticket.estado);
+      const currentBtn = Array.from(stateGrid.children).find(b => b.textContent === ESTADO_LABELS[ticket.estado]);
+      if (currentBtn) currentBtn.classList.add('selected');
+  } else if (!selectedNextState) {
+      setUpdateFormMode('edit', ticket, null); 
+  }
 }
 
 function renderDetail(ticket) {
@@ -296,9 +462,7 @@ function renderDetail(ticket) {
   document.getElementById('entry-date').textContent     = fmtFecha(ticket.fecha_ingreso);
   document.getElementById('assigned-tech').textContent  = ticket.tecnico_asignado || 'Jander Huamani';
   document.getElementById('customer-name').textContent  = ticket.cliente || '-';
-  document.getElementById('observations').value         = ticket.observaciones_tecnicas || '';
 
-  // HSPP89: chip de garantia dinamico en el detalle
   const chip = document.getElementById('warranty-chip');
   if (ticket.garantia === false || ticket.garantia === 'expirada') {
     chip.textContent = 'Sin Garantia / Expirado';
@@ -307,6 +471,16 @@ function renderDetail(ticket) {
     chip.textContent = 'Con Garantia Activa';
     chip.classList.remove('expired');
   }
+
+  const stateData = {};
+  TICKET_ESTADOS.forEach((estado) => {
+    const etapa = ticket.etapas?.[estado] || {};
+    stateData[estado] = {
+      observaciones: (etapa.observaciones || []).map((item) => item.texto || item).filter(Boolean).join('\n'),
+      evidencias: etapa.evidencias || [],
+    };
+  });
+  ticket._stateData = stateData;
 
   renderStateButtons(ticket);
 }
@@ -464,6 +638,31 @@ async function buscarHistorial() {
     feedback.textContent = error.message;
   }
 }
+
+// ── Lógica del Visor de Imágenes (Lightbox) ──
+let galleryUrls = [];
+let currentImgIndex = 0;
+
+function openLightbox(urls, index) {
+    galleryUrls = urls;
+    currentImgIndex = index;
+    document.getElementById('lightbox-img').src = galleryUrls[currentImgIndex];
+    document.getElementById('lightbox').hidden = false;
+}
+
+document.getElementById('lightbox-close').addEventListener('click', () => {
+    document.getElementById('lightbox').hidden = true;
+});
+
+document.getElementById('lightbox-prev').addEventListener('click', () => {
+    currentImgIndex = (currentImgIndex - 1 + galleryUrls.length) % galleryUrls.length;
+    document.getElementById('lightbox-img').src = galleryUrls[currentImgIndex];
+});
+
+document.getElementById('lightbox-next').addEventListener('click', () => {
+    currentImgIndex = (currentImgIndex + 1) % galleryUrls.length;
+    document.getElementById('lightbox-img').src = galleryUrls[currentImgIndex];
+});
 
 // ── Carga inicial ─────────────────────────────────────────────────────────────
 async function loadTickets() {

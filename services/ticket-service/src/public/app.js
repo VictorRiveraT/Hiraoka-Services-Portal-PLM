@@ -211,8 +211,8 @@ function renderResults(tickets) {
   setMode('view-results');
 }
 
-function iconForStep(estado) {
-  if (estado === 'Reparando') {
+function iconForStep(estado, active) {
+  if (estado === 'Reparando' && active) {
     return '<svg viewBox="0 0 24 24"><path d="m14.7 6.3 3-3a4 4 0 0 1-5 5l-7.4 7.4a2.1 2.1 0 1 1-3-3l7.4-7.4a4 4 0 0 1 5-5Z"/></svg>';
   }
   return '<svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg>';
@@ -235,25 +235,86 @@ function renderDetail(ticket) {
     $('det-fecha').hidden = true;
   }
 
+  const stateData = {};
+  ESTADOS.forEach((stepEstado) => {
+    const etapa = ticket.etapas?.[stepEstado] || {};
+    stateData[stepEstado] = {
+      observaciones: (etapa.observaciones || []).map((item) => item.texto || item).filter(Boolean).join('\n'),
+      evidencias: etapa.evidencias || [],
+    };
+  });
+
   const timeline = $('timeline');
   timeline.innerHTML = '';
 
-  ESTADOS.forEach((stepEstado, index) => {
+ESTADOS.forEach((stepEstado, index) => {
     const copy = ESTADO_COPY[stepEstado] || ESTADO_COPY.Recibido;
-    const done = index < currentIndex;
+    const done = index <= currentIndex;
     const active = index === currentIndex;
     const pending = index > currentIndex;
+
+    const dataForStep = stateData[stepEstado] || { observaciones: '', evidencias: [] };
+    const hasExtraData = dataForStep.observaciones || dataForStep.evidencias.length > 0;
+
+    let extraHtml = '';
+    
+    if (hasExtraData && done) {
+      const obsHtml = dataForStep.observaciones
+        ? `<div class="tl-note"><strong>Comentario del técnico:</strong><p>${dataForStep.observaciones}</p></div>`
+        : '';
+      
+      // AQUÍ EL CAMBIO: Agregamos data-estado y data-index ocultos para que JS sepa qué foto es
+      const imgsHtml = dataForStep.evidencias.length 
+        ? `<div class="tl-gallery">
+            ${dataForStep.evidencias.map((url, i) => 
+              `<img src="${url}" class="evidence-thumbnail tl-img-click" data-estado="${stepEstado}" data-index="${i}" style="cursor:zoom-in;" />`
+            ).join('')}
+           </div>` 
+        : '';
+
+      extraHtml = `
+        <div class="tl-extra">
+          <button class="tl-expand-btn" type="button">
+            Ver notas y evidencias del técnico <span>▼</span>
+          </button>
+          <div class="tl-content">
+            ${obsHtml}
+            ${imgsHtml}
+          </div>
+        </div>
+      `;
+    }
+
     const step = document.createElement('section');
     step.className = `tl-step${active ? ' active' : ''}${pending ? ' pending' : ''}`;
     step.innerHTML = `
-      <div class="tl-dot ${done ? 'done' : ''} ${active ? 'active' : ''} ${stepEstado === 'Reparando' ? 'repair' : ''}" aria-hidden="true">${done || active ? iconForStep(stepEstado) : ''}</div>
+      <div class="tl-dot ${done ? 'done' : ''} ${active ? 'active' : ''} ${stepEstado === 'Reparando' && active ? 'repair' : ''}" aria-hidden="true">${done || active ? iconForStep(stepEstado, active) : ''}</div>
       <div class="tl-body">
         <h3 class="tl-title">${copy.title}</h3>
         <p class="tl-desc">${pending ? 'Pendiente de actualizacion.' : copy.detail}</p>
+        ${extraHtml}
       </div>
     `;
+    
+    // El acordeón
+    const expandBtn = step.querySelector('.tl-expand-btn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', function() {
+        this.parentElement.classList.toggle('expanded');
+      });
+    }
+
     timeline.appendChild(step);
   });
+
+  // MAGIA DEL LIGHTBOX: Asignamos el clic DESPUÉS de que toda la línea de tiempo se dibujó en la pantalla
+  timeline.querySelectorAll('.tl-img-click').forEach(img => {
+      img.addEventListener('click', function() {
+          const estado = this.getAttribute('data-estado');
+          const idx = parseInt(this.getAttribute('data-index'));
+          openLightbox(stateData[estado].evidencias, idx);
+      });
+  }); 
 
   setMode('view-detail');
 }
@@ -417,3 +478,35 @@ setMode('view-search');
 if (localStorage.getItem('hiraoka_public_guide_enabled') !== 'false' && !sessionStorage.getItem('hiraoka_guide_seen')) {
   window.setTimeout(() => $('guide-dialog').showModal(), 350);
 }
+
+// ── Lógica del Visor de Imágenes (Lightbox) ──
+let galleryUrls = [];
+let currentImgIndex = 0;
+
+function openLightbox(urls, index) {
+    if (!urls || urls.length === 0) return;
+    galleryUrls = urls;
+    currentImgIndex = index;
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    
+    if (lightbox && lightboxImg) {
+        lightboxImg.src = galleryUrls[currentImgIndex];
+        lightbox.hidden = false;
+    }
+}
+
+const lbClose = document.getElementById('lightbox-close');
+if (lbClose) lbClose.addEventListener('click', () => { document.getElementById('lightbox').hidden = true; });
+
+const lbPrev = document.getElementById('lightbox-prev');
+if (lbPrev) lbPrev.addEventListener('click', () => {
+    currentImgIndex = (currentImgIndex - 1 + galleryUrls.length) % galleryUrls.length;
+    document.getElementById('lightbox-img').src = galleryUrls[currentImgIndex];
+});
+
+const lbNext = document.getElementById('lightbox-next');
+if (lbNext) lbNext.addEventListener('click', () => {
+    currentImgIndex = (currentImgIndex + 1) % galleryUrls.length;
+    document.getElementById('lightbox-img').src = galleryUrls[currentImgIndex];
+});

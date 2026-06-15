@@ -77,32 +77,34 @@ services:
       - hiraoka_network
 
   ticket-service:
-    build: ./services/ticket-service
-    container_name: hiraoka_ticket
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=development
-      - PORT=3002
-      - DB_HOST=postgres
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
-      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
-      - NOTIFICATION_TIMEOUT_MS=${NOTIFICATION_TIMEOUT_MS:-3000}
-      - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
-      - LEGACY_TIMEOUT_MS=${LEGACY_TIMEOUT_MS:-2000}
-      - LEGACY_CIRCUIT_BREAKER_FAILURES=${LEGACY_CIRCUIT_BREAKER_FAILURES:-3}
-      - LEGACY_CIRCUIT_BREAKER_RESET_MS=${LEGACY_CIRCUIT_BREAKER_RESET_MS:-30000}
-    depends_on:
-      db-migrate:
-        condition: service_completed_successfully
-      notification-service:
-        condition: service_started
-      legacy-service:
-        condition: service_started
-    networks:
-      - hiraoka_network
+      build: ./services/ticket-service
+      container_name: hiraoka_ticket
+      restart: unless-stopped
+      environment:
+        - NODE_ENV=development
+        - PORT=3002
+        - DB_HOST=postgres
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_NAME=${DB_NAME}
+        - JWT_SECRET=${JWT_SECRET}
+        - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
+        - NOTIFICATION_TIMEOUT_MS=${NOTIFICATION_TIMEOUT_MS:-3000}
+        - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
+        - LEGACY_TIMEOUT_MS=${LEGACY_TIMEOUT_MS:-2000}
+        - LEGACY_CIRCUIT_BREAKER_FAILURES=${LEGACY_CIRCUIT_BREAKER_FAILURES:-3}
+        - LEGACY_CIRCUIT_BREAKER_RESET_MS=${LEGACY_CIRCUIT_BREAKER_RESET_MS:-30000}
+      depends_on:
+        db-migrate:
+          condition: service_completed_successfully
+        notification-service:
+          condition: service_started
+        legacy-service:
+          condition: service_started
+      volumes:
+        - ./uploads:/app/uploads/
+      networks:
+        - hiraoka_network
 
   nginx:
     image: nginx:alpine

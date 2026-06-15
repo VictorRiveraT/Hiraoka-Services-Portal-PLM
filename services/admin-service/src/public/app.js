@@ -44,8 +44,26 @@ let token = sessionStorage.getItem('admin_token') || '';
 let allUsers = [];
 let usersPage = 1;
 const PAGE_SIZE = 10;
+const ROLE_LABELS = {
+  Tecnico: 'Técnico Taller',
+  Agente: 'Agente Call Center',
+  Gerente: 'Gerente',
+  Administrador: 'Administrador',
+};
+const ROLE_VALUES = Object.fromEntries(Object.entries(ROLE_LABELS).map(([value, label]) => [label, value]));
 let adminPreferences = JSON.parse(localStorage.getItem('admin_preferences') || '{}');
 let dashboardTimer = null;
+let lastDashboardData = null;
+
+// Estado de Notificaciones Inteligentes
+let currentNotifications = [];
+
+// DOM Notificaciones
+const notifBtn   = document.getElementById('notif-btn');
+const notifPanel = document.getElementById('notif-panel');
+const notifDot   = document.getElementById('notif-dot');
+const notifList  = document.getElementById('notif-list');
+const notifCount = document.getElementById('notif-count');
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────
 async function apiJson(url, options = {}) {
@@ -113,20 +131,190 @@ async function loadDashboard() {
   try {
     const response = await apiJson('/api/dashboard/metricas', { headers: authHeaders() });
     const data = response.data || {};
-    // Si la API responde, actualizar valores dinamicamente
+    lastDashboardData = data;
+    
     const values = document.querySelectorAll('.kpi-value');
-    values[0].textContent = `${(Number(data.tiempo_promedio_resolucion_horas || 0) / 24).toFixed(1)} dias`;
+    values[0].textContent = `${(Number(data.tiempo_promedio_resolucion_horas || 0) / 24).toFixed(1)} días`;
     values[1].textContent = data.satisfaccion_nps?.tasa_nps == null
       ? 'Sin respuestas'
       : `${Number(data.satisfaccion_nps.tasa_nps) >= 0 ? '+' : ''}${data.satisfaccion_nps.tasa_nps}`;
     values[3].textContent = data.tecnico_mas_tickets_cerrados?.tecnico || 'Sin datos';
+    
+    syncNotifications(data);
   } catch (error) {
     document.querySelector('.page-heading p').textContent =
-      `No se pudieron cargar las metricas: ${error.message}`;
+      `No se pudieron cargar las métricas: ${error.message}`;
+    renderNotifUI(error.message);
   }
 }
 
-// ── GESTION DE USUARIOS (HSPP109) ─────────────────────────────────────────────
+// ── Lógica del ojito para la contraseña ──
+const togglePwd = document.getElementById('toggle-pwd');
+const pwdInput = document.getElementById('password');
+
+if (togglePwd && pwdInput) {
+  togglePwd.addEventListener('click', () => {
+    const isText = pwdInput.type === 'text';
+    
+    // Cambiamos el tipo de input
+    pwdInput.type = isText ? 'password' : 'text';
+    
+    // Cambiamos el ícono SVG
+    togglePwd.innerHTML = isText 
+      ? `<svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>` 
+      : `<svg viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
+  });
+}
+
+// ── NOTIFICACIONES INTELIGENTES ────────────────────────────────────────────────
+const NOTIF_ICONS = {
+  warning: '<path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5M12 17h.01"/>',
+  danger:  '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  info:    '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  success: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+};
+
+function buildNotifications(data) {
+  const items = [];
+  const porEstado = {};
+  (data?.tickets_por_estado || []).forEach(r => { porEstado[r.estado] = r.total; });
+
+  if (porEstado['Listo']) {
+    items.push({
+      id: 'n-listo',
+      severity: 'success',
+      title: `${porEstado['Listo']} equipo${porEstado['Listo'] === 1 ? '' : 's'} listo${porEstado['Listo'] === 1 ? '' : 's'} para retiro`,
+      detail: 'Clientes pendientes de recoger su equipo en tienda.',
+      targetView: 'dashboard'
+    });
+  }
+
+  if (porEstado['Reparando']) {
+    items.push({
+      id: 'n-reparando',
+      severity: 'info',
+      title: `${porEstado['Reparando']} ticket${porEstado['Reparando'] === 1 ? '' : 's'} en reparación`,
+      detail: 'Equipos actualmente en proceso en el taller.',
+      targetView: 'dashboard'
+    });
+  }
+
+  const nps = data?.satisfaccion_nps;
+  if (nps?.tasa_nps != null && Number(nps.tasa_nps) < 0) {
+    items.push({
+      id: 'n-nps',
+      severity: 'danger',
+      title: `Tasa NPS en ${nps.tasa_nps}`,
+      detail: `${nps.detractores || 0} detractor(es) registrados. Revisa los comentarios.`,
+      targetView: 'dashboard'
+    });
+  }
+
+  const horas = Number(data?.tiempo_promedio_resolucion_horas || 0);
+  if (horas > 0 && horas / 24 > 5) {
+    items.push({
+      id: 'n-tiempo',
+      severity: 'warning',
+      title: `Tiempo promedio de resolución: ${(horas / 24).toFixed(1)} días`,
+      detail: 'Por encima del objetivo de 5 días. Revisa la carga del taller.',
+      targetView: 'dashboard'
+    });
+  }
+
+  return items;
+}
+
+function syncNotifications(data) {
+  const newItems = buildNotifications(data);
+  
+  // Mantener estado de lectura de notificaciones previas
+  newItems.forEach(newItem => {
+    const existing = currentNotifications.find(n => n.id === newItem.id);
+    newItem.read = existing ? existing.read : false;
+  });
+
+  currentNotifications = newItems;
+  renderNotifUI();
+}
+
+function markAsReadAndNavigate(id, targetView) {
+  const notif = currentNotifications.find(n => n.id === id);
+  if (notif) notif.read = true;
+  
+  notifPanel.hidden = true;
+  notifBtn.setAttribute('aria-expanded', 'false');
+  renderNotifUI();
+
+  if (targetView === 'dashboard') showDashboard();
+}
+
+function deleteNotification(e, id) {
+  e.stopPropagation(); // Evitar que el clic abra la notificacion
+  currentNotifications = currentNotifications.filter(n => n.id !== id);
+  renderNotifUI();
+}
+
+function renderNotifUI(errorMsg) {
+  notifList.innerHTML = '';
+
+  if (errorMsg) {
+    notifList.innerHTML = `<li class="notif-empty">No se pudieron cargar las alertas.</li>`;
+    notifCount.textContent = '0 nuevas';
+    notifDot.hidden = true;
+    return;
+  }
+
+  if (currentNotifications.length === 0) {
+    notifList.innerHTML = `<li class="notif-empty">No hay alertas por el momento.</li>`;
+    notifCount.textContent = '0 nuevas';
+    notifDot.hidden = true;
+    return;
+  }
+
+  const unreadCount = currentNotifications.filter(n => !n.read).length;
+  notifCount.textContent = `${unreadCount} nueva${unreadCount === 1 ? '' : 's'}`;
+  notifDot.hidden = unreadCount === 0;
+
+  currentNotifications.forEach(item => {
+    const li = document.createElement('li');
+    li.className = `notif-item severity-${item.severity} ${item.read ? 'read' : 'unread'}`;
+    
+    li.innerHTML = `
+      <span class="notif-icon"><svg viewBox="0 0 24 24">${NOTIF_ICONS[item.severity] || NOTIF_ICONS.info}</svg></span>
+      <div class="notif-text">
+        <strong>${item.title}</strong>
+        <span>${item.detail}</span>
+      </div>
+      <button class="notif-delete" title="Descartar alerta">
+        <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    `;
+    
+    // Clic en toda la notificacion
+    li.addEventListener('click', () => markAsReadAndNavigate(item.id, item.targetView));
+    
+    // Clic en la "X" para borrar
+    li.querySelector('.notif-delete').addEventListener('click', (e) => deleteNotification(e, item.id));
+
+    notifList.appendChild(li);
+  });
+}
+
+notifBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isHidden = notifPanel.hidden;
+  notifPanel.hidden = !isHidden;
+  notifBtn.setAttribute('aria-expanded', String(isHidden));
+});
+
+document.addEventListener('click', (e) => {
+  if (!notifPanel.hidden && !notifPanel.contains(e.target) && e.target !== notifBtn && !notifBtn.contains(e.target)) {
+    notifPanel.hidden = true;
+    notifBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// ── USUARIOS ──────────────────────────────────────────────────────────────────
 const ROL_CLASES = {
   'Técnico Taller':    'role-tecnico',
   'Agente Call Center':'role-agente',
@@ -142,7 +330,7 @@ async function loadUsuarios() {
       id: user.id_usuario,
       nombre: user.nombre_completo,
       correo: user.username,
-      rol: user.rol,
+      rol: ROLE_LABELS[user.rol] || user.rol,
       estado: user.activo ? 'Activo' : 'Inactivo',
       ultimo_acceso: fmtFecha(user.fecha_creacion),
     }));
@@ -173,7 +361,7 @@ function renderUsuarios() {
   const page  = users.slice(start, start + PAGE_SIZE);
 
   usersCountLbl.textContent = `Mostrando ${start + 1}–${Math.min(start + page.length, total)} de ${total} usuarios`;
-  pageInfo.textContent      = `Pag. ${usersPage}`;
+  pageInfo.textContent      = `Pág. ${usersPage}`;
   pagePrev.disabled         = usersPage <= 1;
   pageNext.disabled         = start + PAGE_SIZE >= total;
 
@@ -185,7 +373,7 @@ function renderUsuarios() {
       : `<button class="action-link activate"   data-id="${u.id}" data-action="activar">Activar Cuenta</button>`;
     return `
       <tr>
-        <td class="muted">${u.id}</td>
+        <td class="muted" title="${u.id}">${u.id}</td>
         <td><strong>${u.nombre}</strong></td>
         <td class="muted">${u.correo}</td>
         <td><span class="role-badge ${rolClass}">${u.rol}</span></td>
@@ -201,7 +389,6 @@ function renderUsuarios() {
       </tr>`;
   }).join('');
 
-  // Eventos en filas de la tabla
   usersTbody.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => handleUserAction(btn.dataset.id, btn.dataset.action));
   });
@@ -216,9 +403,9 @@ async function handleUserAction(id, action) {
     try {
       await apiJson(`/api/usuarios/${id}/rol`, {
         method: 'PUT', headers: authHeaders(),
-        body: JSON.stringify({ rol: nuevoRol.trim() }),
+        body: JSON.stringify({ rol: ROLE_VALUES[nuevoRol.trim()] || nuevoRol.trim() }),
       });
-      user.rol = nuevoRol.trim();
+      user.rol = ROLE_LABELS[ROLE_VALUES[nuevoRol.trim()] || nuevoRol.trim()] || nuevoRol.trim();
     } catch (error) {
       alert(error.message);
       return;
@@ -277,28 +464,26 @@ async function buscarHistorial() {
 
   if (!data || (!data.intervenciones && !data.tickets)) {
     emptyHistorial.hidden = false;
-    emptyHistorial.querySelector('p').textContent = 'No se encontro historial para el numero de serie ingresado.';
+    emptyHistorial.querySelector('p').textContent = 'No se encontró historial para el número de serie ingresado.';
     return;
   }
 
-  // Asset banner
   assetEquipo.textContent  = data.equipo   || data.producto || '-';
   assetSN.textContent      = data.serie    || serial;
   assetCliente.textContent = data.cliente  || '-';
   if (data.garantia === false) {
-    assetGarantia.textContent = 'Sin Garantia / Expirado';
+    assetGarantia.textContent = 'Sin Garantía / Expirado';
     assetGarantia.style.background = '#FFEBEE';
     assetGarantia.style.color      = '#CC0000';
     assetGarantia.style.borderColor= '#FFCDD2';
   } else {
-    assetGarantia.textContent = 'Garantia de Fabrica: Activa';
+    assetGarantia.textContent = 'Garantía de Fábrica: Activa';
     assetGarantia.style.background = '';
     assetGarantia.style.color      = '';
     assetGarantia.style.borderColor= '';
   }
   assetBanner.hidden = false;
 
-  // Timeline
   const items = (data.intervenciones || data.tickets || []).map((item) => ({
     ...item,
     titulo: item.titulo || `Ticket ${item.codigo_ticket || item.id_ticket}`,
@@ -306,7 +491,7 @@ async function buscarHistorial() {
     descripcion: item.descripcion || item.descripcion_problema,
     estado_key: item.estado_key || String(item.estado || 'Recibido').toLowerCase(),
     meta: item.meta || [
-      { label: 'Tecnico', valor: item.tecnico || 'Sin asignar' },
+      { label: 'Técnico', valor: item.tecnico || 'Sin asignar' },
       { label: 'Repuestos', valor: item.repuestos_usados?.length || 0 },
     ],
   }));
@@ -364,9 +549,6 @@ navDashboard.addEventListener('click', showDashboard);
 navUsuarios.addEventListener('click', showUsuarios);
 navHistorial.addEventListener('click', showHistorial);
 navConfig.addEventListener('click', showConfig);
-document.getElementById('nav-tickets').addEventListener('click', () => {
-  window.location.href = '/'; // redirige al portal principal
-});
 
 document.getElementById('logout-btn').addEventListener('click', () => {
   token = '';
@@ -387,16 +569,16 @@ document.getElementById('btn-crear-usuario').addEventListener('click', async () 
   if (!nombre_completo) return;
   const username = prompt('Nombre de usuario:');
   if (!username) return;
-  const password = prompt('Contrasena temporal (minimo 8 caracteres):');
+  const password = prompt('Contraseña temporal (mínimo 8 caracteres):');
   if (!password) return;
-  const rol = prompt('Rol: Tecnico, Agente, Gerente o Administrador:', 'Tecnico');
+  const rol = prompt('Rol: Técnico Taller, Agente Call Center, Gerente o Administrador:', 'Técnico Taller');
   if (!rol) return;
 
   try {
     await apiJson('/api/usuarios', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ nombre_completo, username, password, rol }),
+      body: JSON.stringify({ nombre_completo, username, password, rol: ROLE_VALUES[rol] || rol }),
     });
     await loadUsuarios();
   } catch (error) {
@@ -419,7 +601,7 @@ document.getElementById('admin-config-form').addEventListener('submit', (event) 
   localStorage.setItem('hiraoka_public_guide_enabled', String(adminPreferences.publicGuide));
   applyAdminPreferences();
   const message = document.getElementById('admin-config-message');
-  message.textContent = 'Configuracion guardada en este navegador.';
+  message.textContent = 'Configuración guardada en este navegador.';
   message.hidden = false;
 });
 
@@ -427,7 +609,7 @@ document.getElementById('admin-config-form').addEventListener('submit', (event) 
 if (token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    if (payload.rol !== 'Administrador') throw new Error('Rol invalido');
+    if (payload.rol !== 'Administrador') throw new Error('Rol inválido');
     roleLabel.textContent = `Rol: ${payload.rol || 'Administrador'}`;
     showApp();
     showDashboard();
@@ -455,4 +637,4 @@ function showConfig() {
   document.getElementById('admin-alerts').checked = adminPreferences.alerts !== false;
   document.getElementById('admin-public-guide').checked = adminPreferences.publicGuide !== false;
   document.getElementById('admin-font-size').value = adminPreferences.fontSize || 'normal';
-}
+ }

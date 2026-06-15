@@ -11,6 +11,7 @@ const formError    = document.getElementById('form-error');
 const dniHint      = document.getElementById('dni-hint');
 const resultCodigo = document.getElementById('result-codigo');
 const resultFecha  = document.getElementById('result-fecha');
+const resultEvidence = document.getElementById('result-evidence');
 
 // ── ESTADO ────────────────────────────────────────────────────────────────────
 let token = sessionStorage.getItem('agente_token') || '';
@@ -71,6 +72,24 @@ loginForm.addEventListener('submit', async e => {
 function showApp() {
   loginView.hidden = true;
   appView.hidden = false;
+}
+
+// ── Lógica del ojito para la contraseña ──
+const togglePwd = document.getElementById('toggle-pwd');
+const pwdInput = document.getElementById('password');
+
+if (togglePwd && pwdInput) {
+  togglePwd.addEventListener('click', () => {
+    const isText = pwdInput.type === 'text';
+    
+    // Cambiamos el tipo de input
+    pwdInput.type = isText ? 'password' : 'text';
+    
+    // Cambiamos el ícono SVG
+    togglePwd.innerHTML = isText 
+      ? `<svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>` 
+      : `<svg viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
+  });
 }
 
 document.getElementById('logout-btn').addEventListener('click', () => {
@@ -169,6 +188,27 @@ registroForm.addEventListener('submit', async e => {
     });
 
     const ticket = data.data;
+    const fotosIngreso = Array.from(document.getElementById('fotos_ingreso').files || []).slice(0, 5);
+    resultEvidence.textContent = '';
+    if (fotosIngreso.length) {
+      try {
+        const evidenceData = new FormData();
+        fotosIngreso.forEach((file) => evidenceData.append('fotos', file));
+        evidenceData.append('estado', 'Recibido');
+        const evidenceResponse = await fetch(`/api/tickets/${ticket.id_ticket}/evidencias`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: evidenceData,
+        });
+        const evidenceResult = await evidenceResponse.json().catch(() => ({}));
+        resultEvidence.textContent = evidenceResponse.ok
+          ? `${fotosIngreso.length} evidencia(s) de ingreso guardada(s).`
+          : `Ticket creado, pero las evidencias no se guardaron: ${evidenceResult.message || 'error de carga'}`;
+      } catch {
+        resultEvidence.textContent = 'Ticket creado, pero no se pudo conectar para guardar las evidencias.';
+      }
+    }
+
     resultCodigo.textContent = ticket.codigo_ticket || ticket.id_ticket?.slice(0,8).toUpperCase() || 'TK-NUEVO';
     resultFecha.textContent  = fmtFecha(ticket.fecha_estimada_entrega);
 

@@ -243,6 +243,80 @@ const registrarAuditoriaIndependiente = async (payload) => {
   }
 };
 
+const construirEtapasTicket = (ticket, eventos = []) => {
+  const etapas = Object.fromEntries(
+    ESTADOS.map((estado) => [estado, { observaciones: [], evidencias: [] }])
+  );
+
+  const fotosEntrada = Array.isArray(ticket.fotos_entrada) ? ticket.fotos_entrada : [];
+  etapas.Recibido.evidencias.push(...fotosEntrada);
+
+  eventos.forEach((evento) => {
+    const detalle = evento.detalle || {};
+    const estado =
+      evento.accion === "Cambio de Estado de Ticket"
+        ? detalle.estado_nuevo
+        : detalle.estado;
+
+    if (!etapas[estado]) return;
+
+    const observacion = String(detalle.observaciones || "").trim();
+    if (observacion) {
+      etapas[estado].observaciones.push({
+        texto: observacion,
+        fecha_hora: evento.fecha_hora,
+      });
+    }
+
+    if (Array.isArray(detalle.urls)) {
+      etapas[estado].evidencias.push(...detalle.urls);
+    }
+  });
+
+  const estadoActual = etapas[ticket.estado];
+  if (estadoActual && !estadoActual.observaciones.length && ticket.observaciones_tecnicas) {
+    estadoActual.observaciones.push({ texto: ticket.observaciones_tecnicas, fecha_hora: null });
+  }
+  if (estadoActual && !estadoActual.evidencias.length && Array.isArray(ticket.evidencias_tecnicas)) {
+    estadoActual.evidencias.push(...ticket.evidencias_tecnicas);
+  }
+
+  Object.values(etapas).forEach((etapa) => {
+    etapa.evidencias = [...new Set(etapa.evidencias)];
+  });
+
+  return etapas;
+};
+
+const agregarHistorialATickets = async (db, tickets) => {
+  if (!tickets.length) return tickets;
+
+  const ids = tickets.map((ticket) => String(ticket.id_ticket));
+  const result = await db.query(
+    `SELECT id_entidad, accion, detalle, fecha_hora
+     FROM log_auditoria
+     WHERE entidad_afectada = 'tickets' AND id_entidad = ANY($1::text[])
+     ORDER BY fecha_hora ASC`,
+    [ids]
+  );
+
+  const porTicket = new Map();
+  result.rows.forEach((evento) => {
+    const eventos = porTicket.get(evento.id_entidad) || [];
+    eventos.push(evento);
+    porTicket.set(evento.id_entidad, eventos);
+  });
+
+  return tickets.map((ticket) => {
+    const historial = porTicket.get(String(ticket.id_ticket)) || [];
+    return {
+      ...ticket,
+      historial,
+      etapas: construirEtapasTicket(ticket, historial),
+    };
+  });
+};
+
 const enviarNotificacionCambioEstado = async (ticket, estadoNuevo) => {
   if (!ticket.email_cliente) {
     throw new Error("El cliente no tiene email registrado.");
@@ -316,8 +390,13 @@ const getTicketById = async (req, res) => {
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
         t.descripcion_problema,
+        t.observaciones_tecnicas,
+        t.evidencias_tecnicas,
         c.nombre AS cliente,
         p.nombre AS producto,
+        p.marca,
+        p.modelo,
+        p.fotos_entrada,
         p.numero_serie
       FROM tickets t
       JOIN clientes c ON t.id_cliente = c.id_cliente
@@ -335,9 +414,10 @@ const getTicketById = async (req, res) => {
       });
     }
 
+    const [ticket] = await agregarHistorialATickets(pool, result.rows);
     return res.status(200).json({
       success: true,
-      data: result.rows[0],
+      data: ticket,
     });
   } catch (error) {
     console.error("Error al consultar ticket:", error);
@@ -386,84 +466,39 @@ const getTicketsByDni = async (req, res) => {
   }
 };
 
-// POST /tickets/consulta - FEAT01: Seguridad — valida que DNI y ticket pertenezcan al mismo cliente
-// Body: { dni: "12345678", id_ticket: "uuid-del-ticket" }
 const consultarTicketSeguro = async (req, res) => {
   const { dni, id_ticket } = req.body;
   const lookup = getTicketLookup(id_ticket);
 
-  // ── Validación de campos obligatorios
-  if (!dni || !id_ticket) {
-    return res.status(400).json({
-      success: false,
-      message: "Se requieren los campos 'dni' e 'id_ticket'.",
-    });
-  }
-
-  // ── Validación de formato DNI (8 dígitos numéricos)
-  const dniRegex = /^\d{8}$/;
-  if (!dniRegex.test(dni)) {
-    return res.status(400).json({
-      success: false,
-      message: "El DNI debe contener exactamente 8 dígitos numéricos.",
-    });
-  }
-
-  // ── Validacion de formato UUID interno o codigo publico TK-AAAA-000
-  if (!lookup.uuid && !lookup.codigo) {
-    return res.status(400).json({
-      success: false,
-      message: "El id_ticket debe tener formato UUID o codigo TK-AAAA-000.",
-    });
-  }
+  if (!dni || !id_ticket) return res.status(400).json({ success: false, message: "Se requieren 'dni' e 'id_ticket'." });
+  if (!/^\d{8}$/.test(dni)) return res.status(400).json({ success: false, message: "El DNI debe contener 8 dígitos." });
+  if (!lookup.uuid && !lookup.codigo) return res.status(400).json({ success: false, message: "Formato de ticket inválido." });
 
   try {
-    // ── Query: busca el ticket y verifica que el cliente con ese DNI sea el dueño
     const result = await pool.query(
       `SELECT
-        t.id_ticket,
-        t.codigo_ticket,
-        t.estado,
-        t.fecha_ingreso,
-        t.fecha_estimada_entrega,
-        t.descripcion_problema,
-        c.nombre          AS cliente,
-        c.dni             AS dni_cliente,
-        p.nombre          AS producto,
-        p.marca,
-        p.modelo,
-        p.numero_serie
+        t.id_ticket, t.codigo_ticket, t.estado, t.fecha_ingreso, t.fecha_estimada_entrega,
+        t.descripcion_problema, t.observaciones_tecnicas, t.evidencias_tecnicas,
+        c.nombre AS cliente, c.dni AS dni_cliente,
+        p.nombre AS producto, p.marca, p.modelo, p.numero_serie, p.fotos_entrada
       FROM tickets t
       JOIN clientes c ON t.id_cliente = c.id_cliente
       JOIN productos p ON t.id_producto = p.id_producto
-      WHERE (
-          ($1::uuid IS NOT NULL AND t.id_ticket = $1::uuid)
-          OR ($2::text IS NOT NULL AND t.codigo_ticket = $2)
-        )
+      WHERE (($1::uuid IS NOT NULL AND t.id_ticket = $1::uuid) OR ($2::text IS NOT NULL AND t.codigo_ticket = $2))
         AND c.dni = $3`,
       [lookup.uuid, lookup.codigo, dni]
     );
 
-    // ── Sin resultado: el ticket no existe O el DNI no corresponde a ese ticket
-    // Se devuelve el mismo mensaje en ambos casos para no revelar si el ticket existe
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "No se encontró un ticket con esos datos. Verifique su DNI y número de ticket.",
-      });
+      return res.status(404).json({ success: false, message: "No se encontró un ticket con esos datos." });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: result.rows[0],
-    });
+    const [ticket] = await agregarHistorialATickets(pool, result.rows);
+
+    return res.status(200).json({ success: true, data: ticket });
   } catch (error) {
-    console.error("Error en consulta segura de ticket:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error interno del servidor",
-    });
+    console.error("Error en consulta segura:", error);
+    return res.status(500).json({ success: false, message: "Error interno" });
   }
 };
 
@@ -703,16 +738,20 @@ const getTicketsAsignadosTecnico = async (req, res) => {
         p.nombre AS producto,
         p.marca,
         p.modelo,
-        p.numero_serie
+        p.numero_serie,
+        p.fotos_entrada,
+        u.nombre_completo AS tecnico_asignado
        FROM tickets t
        JOIN clientes c ON t.id_cliente = c.id_cliente
        JOIN productos p ON t.id_producto = p.id_producto
+       LEFT JOIN usuarios u ON t.id_tecnico = u.id_usuario
        WHERE t.id_tecnico = $1
        ORDER BY t.fecha_ingreso DESC`,
       [idUsuario]
     );
 
-    const data = result.rows.map((ticket) => ({
+    const ticketsConHistorial = await agregarHistorialATickets(client, result.rows);
+    const data = ticketsConHistorial.map((ticket) => ({
       ...ticket,
       siguientes_estados: obtenerSiguientesEstados(ticket.estado),
     }));
@@ -861,7 +900,7 @@ const actualizarEstadoTicket = async (req, res) => {
         estado_anterior: ticket.estado,
         estado_nuevo: estado,
         tecnico: idUsuario,
-        observaciones_actualizadas: Boolean(String(observaciones || "").trim()),
+        observaciones: String(observaciones || "").trim(),
       },
       ip: req.ip,
     });
@@ -1065,11 +1104,15 @@ const getHistorialProducto = async (req, res) => {
         t.fecha_ingreso,
         t.fecha_estimada_entrega,
         t.fecha_entrega_real,
+        t.observaciones_tecnicas,
+        t.evidencias_tecnicas,
         c.nombre AS cliente,
+        c.dni AS dni_cliente,
         p.nombre AS producto,
         p.marca,
         p.modelo,
         p.numero_serie,
+        p.fotos_entrada,
         u.id_usuario AS id_tecnico,
         u.nombre_completo AS tecnico
        FROM tickets t
@@ -1141,6 +1184,8 @@ const getHistorialProducto = async (req, res) => {
 
       return {
         ...ticket,
+        historial: eventos,
+        etapas: construirEtapasTicket(ticket, eventos),
         estados_recorridos: estadosRecorridos,
         repuestos_usados: repuestosUsados,
       };
@@ -1499,6 +1544,92 @@ const responderNps = async (req, res) => {
   }
 };
 
+const subirEvidencias = async (req, res) => {
+  const { id } = req.params;
+  const idUsuario = req.user && req.user.id_usuario;
+  const files = req.files || [];
+  const estadoEtapa = String(req.body.estado || "").trim();
+
+  if (!esUuidValido(id)) {
+    return res.status(400).json({ success: false, message: "El id del ticket no tiene un formato valido." });
+  }
+  if (!files.length) {
+    return res.status(400).json({ success: false, message: "No se recibieron imagenes." });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    const usuario = await obtenerUsuarioConRol(client, idUsuario);
+    if (!usuario || !usuario.activo || !["Tecnico", "Agente", "Administrador"].includes(usuario.rol)) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ success: false, message: "El usuario no puede subir evidencias." });
+    }
+
+    const ticketResult = await client.query(
+      `SELECT id_ticket, id_tecnico, estado
+       FROM tickets
+       WHERE id_ticket = $1
+       FOR UPDATE`,
+      [id]
+    );
+    const ticket = ticketResult.rows[0];
+    if (!ticket) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Ticket no encontrado." });
+    }
+    const esTecnicoAsignado =
+      usuario.rol === "Tecnico" &&
+      normalizarUuid(ticket.id_tecnico) === normalizarUuid(idUsuario);
+    const esEvidenciaIngreso =
+      ["Agente", "Administrador"].includes(usuario.rol) &&
+      ticket.estado === "Recibido" &&
+      (!estadoEtapa || estadoEtapa === "Recibido");
+
+    if (!esTecnicoAsignado && !esEvidenciaIngreso) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ success: false, message: "No tiene permiso para agregar evidencias a este ticket." });
+    }
+
+    const etapa = estadoEtapa || ticket.estado;
+    if (etapa !== ticket.estado && !esTransicionValida(ticket.estado, etapa)) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ success: false, message: "La etapa indicada no corresponde al flujo actual." });
+    }
+
+    const urls = files.map((file) => `/uploads/evidencias/${file.filename}`);
+    await client.query(
+      `UPDATE tickets
+       SET evidencias_tecnicas = COALESCE(evidencias_tecnicas, '[]'::jsonb) || $1::jsonb
+       WHERE id_ticket = $2`,
+      [JSON.stringify(urls), id]
+    );
+    await registrarAuditoria(client, {
+      idUsuario,
+      accion: "Evidencia Agregada",
+      idEntidad: id,
+      detalle: { estado: etapa, urls },
+      ip: req.ip,
+    });
+
+    await client.query("COMMIT");
+    return res.status(200).json({
+      success: true,
+      message: "Evidencias subidas exitosamente.",
+      data: { estado: etapa, evidencias: urls },
+      evidencias: urls,
+    });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK");
+    console.error("Error al subir evidencias:", error);
+    return res.status(500).json({ success: false, message: "Error interno del servidor al guardar las fotos." });
+  } finally {
+    if (client) client.release();
+  }
+};
+
 module.exports = {
   getTicketById,
   getTicketsByDni,
@@ -1513,4 +1644,5 @@ module.exports = {
   getMetricasDashboard,
   crearTicket,
   responderNps,
+  subirEvidencias,
  };

@@ -19,9 +19,13 @@
           Usuario
           <input id="username" name="username" autocomplete="username" required>
         </label>
-        <label>
-          Contrasena
-          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <label>Contraseña
+          <div class="pwd-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <button type="button" id="toggle-pwd" class="btn-eye" aria-label="Mostrar contraseña">
+              <svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
         </label>
         <button class="primary-action" type="submit">Ingresar</button>
         <p class="form-error" id="login-error" hidden></p>
@@ -130,11 +134,16 @@
               <label class="field-label" for="observations">Observaciones Tecnicas (Requerido)</label>
               <textarea id="observations" placeholder="Escriba los hallazgos tecnicos aqui..." required></textarea>
 
-              <label class="field-label">Evidencia Visual (Opcional)</label>
-              <button class="evidence-button" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>
-                Adjuntar Fotografias de Evidencia
-              </button>
+              <div class="evidence-section">
+                  <!-- El label actúa como botón -->
+                  <label for="evidence-upload" class="evidence-button">
+                      Adjuntar Fotografías de Evidencia
+                  </label>
+                  <input type="file" id="evidence-upload" accept="image/*" capture="environment" multiple style="display: none;">
+                  
+                  <!-- Contenedor donde aparecerán las miniaturas -->
+                  <div id="evidence-gallery" class="evidence-gallery"></div>
+              </div>
 
               <div class="save-row">
                 <p class="panel-message" id="panel-message" hidden></p>
@@ -291,5 +300,13 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <script src="/taller/app.js" defer></script>
+
+    <div id="lightbox" class="lightbox" hidden>
+      <button class="lightbox-close" id="lightbox-close" aria-label="Cerrar">&times;</button>
+      <button class="lightbox-nav lightbox-prev" id="lightbox-prev">&#10094;</button>
+      <img id="lightbox-img" class="lightbox-img" src="" alt="Evidencia ampliada">
+      <button class="lightbox-nav lightbox-next" id="lightbox-next">&#10095;</button>
+    </div>
+
   </body>
  </html>

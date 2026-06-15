@@ -19,7 +19,12 @@
           <input id="username" name="username" autocomplete="username" required>
         </label>
         <label>Contraseña
-          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <div class="pwd-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <button type="button" id="toggle-pwd" class="btn-eye" aria-label="Mostrar contraseña">
+              <svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
         </label>
         <button class="btn-primary" type="submit">Ingresar</button>
         <p class="form-error" id="login-error" hidden></p>
@@ -118,6 +123,11 @@
                     <option value="">Sin asignar — se asignará posteriormente</option>
                   </select>
                 </label>
+                <label class="field span-2">
+                  <span>Fotos de ingreso / evidencia inicial</span>
+                  <input id="fotos_ingreso" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                  <small class="field-hint">Hasta 5 imágenes. Se mostrarán al cliente en “Equipo recibido”.</small>
+                </label>
               </div>
             </div>
 
@@ -160,6 +170,7 @@
                   <span class="portal-url">hiraokaservices.lat</span>
                 </div>
               </div>
+              <p class="field-hint" id="result-evidence"></p>
             </div>
 
             <div class="confirm-actions">

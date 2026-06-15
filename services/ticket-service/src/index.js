@@ -61,4 +61,6 @@ app.get("/health", (req, res) => {
 app.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
 app.use("/tickets", ticketRoutes);
 
+app.use('/uploads', express.static('/app/uploads'));
+
 app.listen(PORT);

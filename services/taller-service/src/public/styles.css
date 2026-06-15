@@ -444,6 +444,18 @@ select { min-width: 150px; min-height: 42px; padding: 0 12px; }
 
 .state-button:disabled { cursor: not-allowed; opacity: 0.7; }
 
+/* ── Botones de Etapas Pasadas (Solo Lectura) ── */
+.state-button.past {
+  border-color: #81C784;
+  color: #2E7D32;
+  background: #E8F5E9;
+}
+
+.state-button.past.selected {
+  border-color: #1B5E20;
+  border-width: 2px;
+}
+
 .field-label { display: block; margin: 0 0 10px; font-weight: 700; }
 
 textarea {
@@ -456,18 +468,37 @@ textarea {
 }
 
 .evidence-button {
-  width: 100%;
-  min-height: 60px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 110px;
-  border: 1px dashed #BDBDBD;
-  border-radius: 4px;
-  background: var(--white);
-  color: #555555;
-  font-weight: 700;
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #004b93; /* Color Hiraoka */
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.evidence-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.evidence-thumbnail {
+    width: 150px;       /* Casi el doble de grande (antes 80px) */
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.evidence-thumbnail:hover {
+    transform: scale(1.05); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .save-row {
@@ -869,6 +900,66 @@ body[data-font-size="xlarge"] { font-size: 18px; }
   background: #E8F5E9;
   box-shadow: 0 12px 32px rgba(17, 24, 39, 0.2);
   font-weight: 700;
+}
+
+/* ── VISOR DE IMÁGENES (LIGHTBOX) ── */
+.lightbox {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox-img {
+  max-width: 85%; max-height: 85vh;
+  border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  object-fit: contain;
+}
+.lightbox-close {
+  position: absolute; top: 20px; right: 30px;
+  background: none; border: none; color: white; font-size: 44px;
+  cursor: pointer; transition: transform 0.2s, color 0.2s;
+  line-height: 1;
+}
+.lightbox-close:hover { transform: scale(1.1); color: var(--red); }
+.lightbox-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  font-size: 24px; width: 50px; height: 50px; border-radius: 50%;
+  cursor: pointer; transition: background 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,0.35); }
+.lightbox-prev { left: 20px; }
+.lightbox-next { right: 20px; }
+
+/* ── TOGGLE PASSWORD (OJITO) ── */
+.pwd-wrap { 
+  position: relative; 
+  display: flex; 
+  align-items: center; 
+}
+.pwd-wrap input { 
+  width: 100%; 
+  padding-right: 44px !important; /* Espacio para que el texto no pise el ojito */
+}
+.btn-eye { 
+  position: absolute; 
+  right: 8px; 
+  background: none; 
+  border: none; 
+  display: grid; 
+  place-items: center; 
+  color: #9CA3AF; 
+  cursor: pointer; 
+  padding: 4px;
+}
+.btn-eye:hover { 
+  color: #4B5563; 
+}
+.btn-eye svg { 
+  width: 20px; 
+  height: 20px; 
 }
 
 @media (max-width: 980px) {

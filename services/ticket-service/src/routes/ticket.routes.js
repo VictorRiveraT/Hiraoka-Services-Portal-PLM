@@ -1,4 +1,8 @@
 ﻿const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const multer = require("multer");
 const router = express.Router();
 const {
   getTicketById,
@@ -14,9 +18,29 @@ const {
   getMetricasDashboard,
   crearTicket,
   responderNps,
+  subirEvidencias,
 } = require("../controllers/ticket.controller");
+
 const validateDni = require("../middleware/validateDni");
 const verifyToken = require("../middleware/verifyToken");
+
+const uploadDir = process.env.UPLOAD_DIR || "/app/uploads/evidencias";
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, `${req.params.id}-${crypto.randomUUID()}${extension}`);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { files: 5, fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)),
+});
 
 // POST /tickets/consulta — HSPP-34: Validación segura DNI + id_ticket (FEAT01)
 // IMPORTANTE: debe declararse ANTES de /:id para que Express no lo capture como parámetro
@@ -58,4 +82,7 @@ router.get("/:id/garantia", consultarGarantiaTicket);
 // GET /tickets/:id — Consulta un ticket por su UUID
 router.get("/:id", getTicketById);
 
+router.post("/:id/evidencias", verifyToken, upload.array("fotos", 5), subirEvidencias);
+
 module.exports = router;
+

@@ -574,6 +574,42 @@ input {
   stroke-linecap: round;
 }
 
+/* ── Notas del Técnico (Portal Público) ── */
+.tech-notes-card {
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: #F9FAFB;
+}
+
+.tech-notes-card h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #1F2937;
+}
+
+.tech-notes-card p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #4B5563;
+  line-height: 1.5;
+}
+
+.tech-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.evidence-thumbnail {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
 .timeline-card {
   overflow: hidden;
 }
@@ -982,6 +1018,91 @@ body.mode-detail .outline-top {
 
 .nps-message.success {
   color: #177245;
+}
+
+/* ── Estilos del Acordeón en la Línea de Tiempo ── */
+.tl-extra {
+  margin-top: 14px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+.tl-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--red);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.tl-expand-btn span {
+  transition: transform 0.2s;
+}
+.tl-content {
+  display: none;
+  padding: 14px;
+  margin-top: 8px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.tl-extra.expanded .tl-content {
+  display: block;
+  animation: fadeInDown 0.3s ease;
+}
+.tl-extra.expanded .tl-expand-btn span {
+  transform: rotate(180deg);
+}
+.tl-note {
+  font-size: 13px;
+  color: #4B5563;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.tl-note strong {
+  color: #111827;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ── VISOR DE IMÁGENES (LIGHTBOX) ── */
+.lightbox {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox-img {
+  max-width: 85%; max-height: 85vh;
+  border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  object-fit: contain;
+}
+.lightbox-close {
+  position: absolute; top: 20px; right: 30px;
+  background: none; border: none; color: white; font-size: 44px;
+  cursor: pointer; transition: transform 0.2s, color 0.2s;
+  line-height: 1;
+}
+.lightbox-close:hover { transform: scale(1.1); color: var(--red); }
+.lightbox-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  font-size: 24px; width: 50px; height: 50px; border-radius: 50%;
+  cursor: pointer; transition: background 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,0.35); }
+.lightbox-prev { left: 20px; }
+.lightbox-next { right: 20px; }
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 560px) {
