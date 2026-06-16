@@ -1,0 +1,130 @@
+:root {
+  --red: #b00020;
+  --red-hover: #8f001a;
+  --red-soft: #fff0f3;
+  --page: #f6f7f9;
+  --white: #ffffff;
+  --text: #18202f;
+  --muted: #687385;
+  --border: #dfe3ea;
+  --shadow: 0 12px 30px rgba(24, 32, 47, 0.08);
+  --shadow-md: 0 18px 44px rgba(24, 32, 47, 0.12);
+}
+
+body {
+  color: var(--text);
+  background: var(--page);
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.topbar {
+  height: 68px;
+  padding: 0 84px;
+  background: var(--red);
+  box-shadow: 0 2px 10px rgba(24, 32, 47, 0.14);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--white);
+  font-size: 20px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.brand strong { font-weight: 800; }
+.brand span { font-size: 20px; font-weight: 600; }
+.brand b {
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  opacity: 1;
+}
+
+.login-panel,
+.form-card,
+.confirm-card,
+.ticket-result {
+  border-color: var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.section-heading h1,
+.confirm-card h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.login-panel h1 { font-size: 24px; font-weight: 800; }
+
+.section-heading p,
+.confirm-card > p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.login-panel label,
+.field {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field input,
+.field select,
+.field textarea,
+.login-panel input {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.login-panel input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(176, 0, 32, 0.12);
+}
+
+.btn-primary,
+.btn-buscar:hover {
+  border-radius: 6px;
+  background: var(--red);
+  font-weight: 800;
+}
+
+.btn-primary:hover { background: var(--red-hover); }
+
+.btn-secondary,
+.btn-buscar {
+  border-color: var(--red);
+  border-radius: 6px;
+  color: var(--red);
+}
+
+@media (max-width: 640px) {
+  .topbar { height: auto; min-height: 60px; padding: 12px 16px; }
+  .brand, .brand span { font-size: 18px; }
+  .login-panel,
+  .confirm-card { width: min(420px, calc(100dvw - 32px)); max-width: calc(100dvw - 32px); }
+  .login-panel input,
+  .pwd-wrap,
+  .pwd-wrap input { max-width: 100%; }
+  .section-heading h1,
+  .confirm-card h1 { font-size: 24px; }
+}
+
+@media (max-width: 360px) {
+  .brand b { display: none; }
+}

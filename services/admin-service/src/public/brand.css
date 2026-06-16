@@ -1,0 +1,128 @@
+:root {
+  --red: #b00020;
+  --red-hover: #8f001a;
+  --red-soft: #fff0f3;
+  --page: #f6f7f9;
+  --surface: #f1f3f6;
+  --white: #ffffff;
+  --text: #18202f;
+  --muted: #687385;
+  --border: #dfe3ea;
+  --shadow: 0 12px 30px rgba(24, 32, 47, 0.08);
+}
+
+body {
+  color: var(--text);
+  background: var(--page);
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.topbar {
+  min-height: 68px;
+  padding: 0 84px;
+  background: var(--red);
+  box-shadow: 0 2px 10px rgba(24, 32, 47, 0.14);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--white);
+  font-size: 20px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.brand strong { font-weight: 800; }
+.brand span { font-size: 20px; font-weight: 600; opacity: 1; }
+.brand b {
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.app-shell,
+.login-panel,
+.kpi-card,
+.chart-card,
+.filter-bar,
+.table-wrap,
+.search-card,
+.admin-settings fieldset,
+.timeline-card {
+  border-color: var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.login-panel h1,
+.page-heading h1,
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.action-header h1 { font-size: 24px; font-weight: 800; }
+
+.page-heading p,
+.muted {
+  color: var(--muted);
+}
+
+.login-panel label,
+.admin-field,
+.field-label {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.login-panel input,
+.search-field,
+select,
+textarea,
+.setting-field input {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.login-panel input:focus,
+.search-field:focus-within,
+select:focus,
+textarea:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(176, 0, 32, 0.12);
+}
+
+.btn-primary {
+  min-height: 48px;
+  border-radius: 6px;
+  background: var(--red);
+  font-weight: 800;
+}
+
+.btn-primary:hover { background: var(--red-hover); }
+.side-item { border-radius: 6px; }
+.side-item.active { color: var(--red); background: var(--red-soft); }
+
+@media (max-width: 900px) {
+  .topbar { padding: 12px 16px; }
+  .brand, .brand span { font-size: 18px; }
+  .login-panel { width: min(420px, calc(100dvw - 32px)); max-width: calc(100dvw - 32px); }
+  .login-panel input,
+  .pwd-wrap,
+  .pwd-wrap input { max-width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .brand b { display: none; }
+}
