@@ -2,8 +2,8 @@ const ESTADOS = ['Recibido', 'Diagnosticando', 'Reparando', 'Listo', 'Entregado'
 
 const ESTADO_LABELS = {
   Recibido: 'Recibido',
-  Diagnosticando: 'En diagnostico',
-  Reparando: 'En reparacion',
+  Diagnosticando: 'En diagnóstico',
+  Reparando: 'En reparación',
   Listo: 'Listo para retiro',
   Entregado: 'Entregado',
 };
@@ -11,23 +11,31 @@ const ESTADO_LABELS = {
 const ESTADO_COPY = {
   Recibido: {
     title: 'Equipo Recibido',
-    card: 'Su equipo ingreso con exito a nuestros almacenes de Lima. Se ha documentado el estado fisico inicial y esta programado para ingresar a mesa de trabajo.',
-    detail: 'Registrado en tienda de manera exitosa. Estado fisico inicial documentado detalladamente por nuestro equipo de atencion.',
+    card: 'Su equipo ingresó con éxito a nuestros almacenes de Lima. Se documentó el estado físico inicial y está programado para ingresar a mesa de trabajo.',
+    detail: 'Registrado en tienda de manera exitosa. Estado físico inicial documentado por el equipo de recepción.',
+    expand: 'Ver recepción del equipo',
+    noteLabel: 'Observación de recepción:',
   },
   Diagnosticando: {
-    title: 'Revision Tecnica (Diagnostico)',
-    card: 'Un especialista esta revisando los componentes internos de su equipo para identificar la causa exacta de la falla y verificar la cobertura de su garantia.',
-    detail: 'El tecnico especializado reviso el equipo. Se validan componentes, garantia y condicion fisica antes de iniciar una reparacion.',
+    title: 'Revisión Técnica (Diagnóstico)',
+    card: 'Un especialista está revisando los componentes internos de su equipo para identificar la causa exacta de la falla y verificar la cobertura de su garantía.',
+    detail: 'El técnico especializado revisó el equipo. Se validan componentes, garantía y condición física antes de iniciar una reparación.',
+    expand: 'Ver notas y evidencias del técnico',
+    noteLabel: 'Comentario del técnico:',
   },
   Reparando: {
-    title: 'Reparacion en Proceso',
-    card: 'El diagnostico fue aprobado. Nos encontramos instalando los repuestos originales autorizados de fabrica para garantizar la operatividad de su dispositivo.',
-    detail: 'Instalando repuestos originales autorizados por la marca. Se estan realizando pruebas de hermeticidad y carga rapida.',
+    title: 'Reparación en Proceso',
+    card: 'El diagnóstico fue aprobado. Nos encontramos instalando repuestos autorizados para garantizar la operatividad de su dispositivo.',
+    detail: 'Instalando repuestos autorizados por la marca. Se están realizando pruebas de hermeticidad y carga rápida.',
+    expand: 'Ver notas, repuestos y evidencias',
+    noteLabel: 'Comentario del técnico:',
   },
   Listo: {
     title: 'Listo para Retiro',
-    card: 'Buenas noticias. Su equipo supero con exito todas las pruebas de control de calidad y ya puede acercarse a la sede elegida para recogerlo.',
-    detail: 'Reparacion solucionada con exito. Recuerde traer su DNI fisico y el numero de ticket para la entrega.',
+    card: 'Buenas noticias. Su equipo superó con éxito las pruebas de control de calidad y ya puede acercarse a la sede elegida para recogerlo.',
+    detail: 'Reparación solucionada con éxito. Recuerde traer su DNI físico y el número de ticket para la entrega.',
+    expand: 'Ver mensaje final y evidencia',
+    noteLabel: 'Mensaje final:',
   },
   Entregado: {
     title: 'Equipo Entregado',
@@ -142,7 +150,7 @@ function renderResults(tickets) {
     const idTicket = ticket.id_ticket;
     const codigo = ticketCode(ticket);
 
-    // ── Mobile card ──
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Mobile card Ã¢â€â‚¬Ã¢â€â‚¬
     const card = document.createElement('article');
     card.className = 'ticket-result';
     card.tabIndex = 0;
@@ -171,14 +179,14 @@ function renderResults(tickets) {
     });
     list.appendChild(card);
 
-    // ── Desktop table row ──
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Desktop table row Ã¢â€â‚¬Ã¢â€â‚¬
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="col-ticket">Ticket #${codigo}</td>
       <td>${badge(estado)}</td>
       <td>${equipo}</td>
       <td><span class="warranty-badge warranty-loading" data-warranty-row="${idTicket}">Verificando...</span></td>
-      <td class="col-details"><span data-details-row="${idTicket}">—</span></td>
+      <td class="col-details"><span data-details-row="${idTicket}">-</span></td>
     `;
     tr.addEventListener('click', () => {
       if (estado === 'Entregado') openNps(idTicket || codigo);
@@ -186,7 +194,7 @@ function renderResults(tickets) {
     });
     tbody.appendChild(tr);
 
-    // ── Cargar garantía de forma asíncrona ──
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Cargar garantÃ­a de forma asÃ­ncrona Ã¢â€â‚¬Ã¢â€â‚¬
     fetchWarranty(idTicket).then((status) => {
       // actualizar card mobile
       const cardBadge = document.querySelector(`[data-warranty-card="${idTicket}"]`);
@@ -198,11 +206,11 @@ function renderResults(tickets) {
       const detailsCell = document.querySelector(`[data-details-row="${idTicket}"]`);
       if (detailsCell) {
         if (ticket.repuesto_asignado) {
-          detailsCell.innerHTML = `<span class="detail-parts">🔧 ${ticket.repuesto_asignado}</span>`;
+          detailsCell.innerHTML = `<span class="detail-parts">Repuesto: ${ticket.repuesto_asignado}</span>`;
         } else if (estado === 'Listo' || estado === 'Entregado') {
-          detailsCell.innerHTML = `<span class="detail-quality">✓ Control de calidad aprobado</span>`;
+          detailsCell.innerHTML = `<span class="detail-quality">Control de calidad aprobado</span>`;
         } else {
-          detailsCell.textContent = '—';
+          detailsCell.textContent = '-';
         }
       }
     });
@@ -246,6 +254,8 @@ function renderDetail(ticket) {
 
   const timeline = $('timeline');
   timeline.innerHTML = '';
+  const repuestos = ticket.repuestos_asignados || [];
+  const pago = ticket.pago || {};
 
 ESTADOS.forEach((stepEstado, index) => {
     const copy = ESTADO_COPY[stepEstado] || ESTADO_COPY.Recibido;
@@ -254,16 +264,30 @@ ESTADOS.forEach((stepEstado, index) => {
     const pending = index > currentIndex;
 
     const dataForStep = stateData[stepEstado] || { observaciones: '', evidencias: [] };
-    const hasExtraData = dataForStep.observaciones || dataForStep.evidencias.length > 0;
+    const hasExtraData =
+      dataForStep.observaciones ||
+      dataForStep.evidencias.length > 0 ||
+      (stepEstado === 'Reparando' && repuestos.length > 0) ||
+      ((stepEstado === 'Listo' || stepEstado === 'Entregado') && (pago.monto_final || pago.monto_estimado_inicial));
 
     let extraHtml = '';
     
     if (hasExtraData && done) {
       const obsHtml = dataForStep.observaciones
-        ? `<div class="tl-note"><strong>Comentario del técnico:</strong><p>${dataForStep.observaciones}</p></div>`
+        ? `<div class="tl-note"><strong>${copy.noteLabel || 'Comentario:'}</strong><p>${dataForStep.observaciones}</p></div>`
+        : '';
+      const partsHtml = stepEstado === 'Reparando' && repuestos.length
+        ? `<div class="tl-note tl-parts"><strong>Repuestos agregados:</strong>
+            <ul>${repuestos.map((item) => `<li>${item.codigo} · ${item.nombre || 'Repuesto'} · ${item.cantidad || 1} und.</li>`).join('')}</ul>
+           </div>`
+        : '';
+      const paymentHtml = (stepEstado === 'Listo' || stepEstado === 'Entregado') && (pago.monto_final || pago.monto_estimado_inicial)
+        ? `<div class="tl-note tl-payment"><strong>Resumen de pago:</strong>
+            <p>Estimado inicial: S/. ${Number(pago.monto_estimado_inicial || 0).toFixed(2)} · Adelanto: S/. ${Number(pago.adelanto || 0).toFixed(2)} · Saldo: S/. ${Number(pago.saldo_pendiente || 0).toFixed(2)}</p>
+           </div>`
         : '';
       
-      // AQUÍ EL CAMBIO: Agregamos data-estado y data-index ocultos para que JS sepa qué foto es
+      // AQUÃ EL CAMBIO: Agregamos data-estado y data-index ocultos para que JS sepa quÃ© foto es
       const imgsHtml = dataForStep.evidencias.length 
         ? `<div class="tl-gallery">
             ${dataForStep.evidencias.map((url, i) => 
@@ -275,10 +299,12 @@ ESTADOS.forEach((stepEstado, index) => {
       extraHtml = `
         <div class="tl-extra">
           <button class="tl-expand-btn" type="button">
-            Ver notas y evidencias del técnico <span>▼</span>
+            ${copy.expand || 'Ver notas y evidencias'} <span>▼</span>
           </button>
           <div class="tl-content">
             ${obsHtml}
+            ${partsHtml}
+            ${paymentHtml}
             ${imgsHtml}
           </div>
         </div>
@@ -296,7 +322,7 @@ ESTADOS.forEach((stepEstado, index) => {
       </div>
     `;
     
-    // El acordeón
+    // El acordeÃ³n
     const expandBtn = step.querySelector('.tl-expand-btn');
     if (expandBtn) {
       expandBtn.addEventListener('click', function() {
@@ -307,7 +333,7 @@ ESTADOS.forEach((stepEstado, index) => {
     timeline.appendChild(step);
   });
 
-  // MAGIA DEL LIGHTBOX: Asignamos el clic DESPUÉS de que toda la línea de tiempo se dibujó en la pantalla
+  // MAGIA DEL LIGHTBOX: Asignamos el clic DESPUÃ‰S de que toda la lÃ­nea de tiempo se dibujÃ³ en la pantalla
   timeline.querySelectorAll('.tl-img-click').forEach(img => {
       img.addEventListener('click', function() {
           const estado = this.getAttribute('data-estado');
@@ -479,7 +505,7 @@ if (localStorage.getItem('hiraoka_public_guide_enabled') !== 'false' && !session
   window.setTimeout(() => $('guide-dialog').showModal(), 350);
 }
 
-// ── Lógica del Visor de Imágenes (Lightbox) ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ LÃ³gica del Visor de ImÃ¡genes (Lightbox) Ã¢â€â‚¬Ã¢â€â‚¬
 let galleryUrls = [];
 let currentImgIndex = 0;
 

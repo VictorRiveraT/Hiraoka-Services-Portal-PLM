@@ -17,6 +17,7 @@ const {
   getHistorialProducto,
   getMetricasDashboard,
   crearTicket,
+  registrarEntregaTicket,
   responderNps,
   subirEvidencias,
 } = require("../controllers/ticket.controller");
@@ -63,6 +64,9 @@ router.post('/', verifyToken, crearTicket);
 
 // POST /tickets/:id/nps - FEAT15: registra una unica encuesta NPS
 router.post("/:id/nps", responderNps);
+
+// POST /tickets/:id/entrega - Agente registra pago simulado y entrega
+router.post("/:id/entrega", verifyToken, registrarEntregaTicket);
 
 // PUT /tickets/:id/estado — Tecnico asignado actualiza estado del ticket
 router.put("/:id/estado", verifyToken, actualizarEstadoTicket);

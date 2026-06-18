@@ -134,18 +134,97 @@ async function loadDashboard() {
     lastDashboardData = data;
     
     const values = document.querySelectorAll('.kpi-value');
+    const subs = document.querySelectorAll('.kpi-sub');
+    const ticketsPorEstado = data.tickets_por_estado || [];
+    const ticketsActivos = ticketsPorEstado
+      .filter((row) => row.estado !== 'Entregado')
+      .reduce((sum, row) => sum + Number(row.total || 0), 0);
     values[0].textContent = `${(Number(data.tiempo_promedio_resolucion_horas || 0) / 24).toFixed(1)} días`;
     values[1].textContent = data.satisfaccion_nps?.tasa_nps == null
       ? 'Sin respuestas'
       : `${Number(data.satisfaccion_nps.tasa_nps) >= 0 ? '+' : ''}${data.satisfaccion_nps.tasa_nps}`;
+    values[2].textContent = String(ticketsActivos);
     values[3].textContent = data.tecnico_mas_tickets_cerrados?.tecnico || 'Sin datos';
+    subs[1].textContent = data.satisfaccion_nps?.total_respuestas
+      ? `${data.satisfaccion_nps.total_respuestas} respuesta${Number(data.satisfaccion_nps.total_respuestas) === 1 ? '' : 's'} registrada${Number(data.satisfaccion_nps.total_respuestas) === 1 ? '' : 's'}`
+      : 'Sin respuestas NPS registradas';
+    subs[2].textContent = `${ticketsActivos} ticket${ticketsActivos === 1 ? '' : 's'} sin entregar`;
+    subs[3].textContent = data.tecnico_mas_tickets_cerrados?.tickets_cerrados
+      ? `${data.tecnico_mas_tickets_cerrados.tickets_cerrados} ticket${Number(data.tecnico_mas_tickets_cerrados.tickets_cerrados) === 1 ? '' : 's'} cerrado${Number(data.tecnico_mas_tickets_cerrados.tickets_cerrados) === 1 ? '' : 's'} en el periodo`
+      : 'Sin tickets cerrados en el periodo';
     
+    renderEstadoDashboard(ticketsPorEstado);
+    renderEficienciaRepuestos(data.eficiencia_repuestos || {});
     syncNotifications(data);
   } catch (error) {
     document.querySelector('.page-heading p').textContent =
       `No se pudieron cargar las métricas: ${error.message}`;
     renderNotifUI(error.message);
   }
+}
+
+function renderEstadoDashboard(rows) {
+  const labels = {
+    Listo: 'Listo para retiro',
+    Reparando: 'En reparación',
+    Diagnosticando: 'En diagnóstico',
+    Recibido: 'Recibido',
+    Entregado: 'Entregado',
+  };
+  const classes = {
+    Listo: 'listo',
+    Reparando: 'reparando',
+    Diagnosticando: 'diagnosticando',
+    Recibido: 'diagnosticando',
+    Entregado: 'listo',
+  };
+  const activeRows = rows
+    .filter((row) => row.estado !== 'Entregado')
+    .sort((a, b) => Number(b.total || 0) - Number(a.total || 0));
+  const total = activeRows.reduce((sum, row) => sum + Number(row.total || 0), 0);
+  const barList = document.querySelector('.bar-list');
+  if (!barList) return;
+  if (!activeRows.length || total === 0) {
+    barList.innerHTML = '<p class="muted">No hay tickets activos registrados.</p>';
+    return;
+  }
+  barList.innerHTML = activeRows.map((row) => {
+    const percent = Math.round((Number(row.total || 0) / total) * 100);
+    const cls = classes[row.estado] || 'diagnosticando';
+    return `
+      <div class="bar-item">
+        <div class="bar-header">
+          <span>${labels[row.estado] || row.estado}</span>
+          <strong class="bar-percent percent-${cls}">${percent}%</strong>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill ${cls}" style="width:${percent}%"></div>
+        </div>
+        <small class="muted">${row.total} ticket${Number(row.total) === 1 ? '' : 's'} en este estado</small>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderEficienciaRepuestos(data) {
+  const hasData = data.porcentaje_stock != null;
+  const percent = hasData ? Number(data.porcentaje_stock) : 0;
+  const special = Math.max(0, 100 - percent);
+  const circumference = 2 * Math.PI * 76;
+  const stockDash = hasData ? (circumference * percent) / 100 : 0;
+  const specialDash = hasData ? circumference - stockDash : 0;
+
+  document.getElementById('donut-percent').textContent =
+    hasData ? `${percent}%` : 'S/D';
+  document.getElementById('donut-label').textContent =
+    hasData ? 'Eficiencia' : 'Sin datos';
+  document.getElementById('donut-stock').setAttribute('stroke-dasharray', `${stockDash} ${circumference - stockDash}`);
+  document.getElementById('donut-special').setAttribute('stroke-dasharray', `${specialDash} ${circumference - specialDash}`);
+  document.getElementById('donut-special').setAttribute('stroke-dashoffset', String(-stockDash));
+  document.getElementById('legend-stock-label').textContent =
+    `Repuestos en stock (${hasData ? `${percent}%` : 'sin datos'})`;
+  document.getElementById('legend-special-label').textContent =
+    `Pedidos especiales (${hasData ? `${special}%` : 'sin datos'})`;
 }
 
 // ── Lógica del ojito para la contraseña ──

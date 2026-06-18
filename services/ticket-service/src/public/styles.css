@@ -106,8 +106,12 @@ input {
 
 .header-back {
   position: absolute;
+  top: 50%;
   left: 18px;
   display: none;
+  place-items: center;
+  padding: 0;
+  transform: translateY(-50%);
 }
 
 .outline-top {
@@ -1128,3 +1132,5 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   outline: 3px solid rgba(204, 0, 0, 0.22);
   outline-offset: 3px;
 }
+.tl-parts ul { margin: 8px 0 0; padding-left: 18px; }
+.tl-payment p { margin-bottom: 0; }

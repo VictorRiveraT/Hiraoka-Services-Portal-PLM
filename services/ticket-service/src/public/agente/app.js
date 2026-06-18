@@ -1,4 +1,4 @@
-// ── REFERENCIAS DOM ───────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ REFERENCIAS DOM Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const loginView    = document.getElementById('login-view');
 const loginForm    = document.getElementById('login-form');
 const loginError   = document.getElementById('login-error');
@@ -12,11 +12,15 @@ const dniHint      = document.getElementById('dni-hint');
 const resultCodigo = document.getElementById('result-codigo');
 const resultFecha  = document.getElementById('result-fecha');
 const resultEvidence = document.getElementById('result-evidence');
+const deliverySummary = document.getElementById('delivery-summary');
+const deliveryPayment = document.getElementById('delivery-payment');
+const deliveryMessage = document.getElementById('delivery-message');
 
-// ── ESTADO ────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ ESTADO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 let token = sessionStorage.getItem('agente_token') || '';
+let deliveryTicket = null;
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ HELPERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function apiJson(url, options = {}) {
   const resp = await fetch(url, options);
   const data = await resp.json().catch(() => ({}));
@@ -36,6 +40,108 @@ function fmtFecha(value) {
 function val(id) { return document.getElementById(id).value.trim(); }
 function setVal(id, v) { document.getElementById(id).value = v; }
 
+function money(value) {
+  return `S/. ${Number(value || 0).toFixed(2)}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+const DELIVERY_STAGE_LABELS = {
+  Recibido: 'Recepción',
+  Diagnosticando: 'Diagnóstico',
+  Reparando: 'Reparación',
+  Listo: 'Listo para retiro',
+  Entregado: 'Entrega',
+};
+
+function renderDeliveryDetails(ticket) {
+  const repuestos = ticket.repuestos_asignados || [];
+  const pago = ticket.pago || {};
+  const etapas = ticket.etapas || {};
+  const totalRepuestos = repuestos.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+  const stageHtml = Object.entries(DELIVERY_STAGE_LABELS)
+    .map(([estado, label]) => {
+      const etapa = etapas[estado] || {};
+      const observaciones = (etapa.observaciones || [])
+        .map((item) => item.texto || item)
+        .filter(Boolean);
+      const evidencias = etapa.evidencias || [];
+      if (!observaciones.length && !evidencias.length) return '';
+      return `
+        <section class="delivery-stage">
+          <h4>${label}</h4>
+          ${observaciones.map((texto) => `<p>${escapeHtml(texto)}</p>`).join('')}
+          ${evidencias.length ? `
+            <div class="delivery-evidence">
+              ${evidencias.map((url) => `
+                <a href="${escapeHtml(url)}" target="_blank" rel="noopener">
+                  <img src="${escapeHtml(url)}" alt="Evidencia de ${label}">
+                </a>
+              `).join('')}
+            </div>
+          ` : ''}
+        </section>
+      `;
+    })
+    .join('');
+
+  deliverySummary.innerHTML = `
+    <div class="delivery-heading">
+      <strong>Ticket #${escapeHtml(ticket.codigo_ticket || ticket.id_ticket)}</strong>
+      <span class="delivery-status">${escapeHtml(ticket.estado)}</span>
+    </div>
+    <p>${escapeHtml([ticket.producto, ticket.marca, ticket.modelo].filter(Boolean).join(' '))}</p>
+    <section class="delivery-stage">
+      <h4>Tipo de reparación / problema reportado</h4>
+      <p>${escapeHtml(ticket.descripcion_problema || 'Sin descripción registrada.')}</p>
+    </section>
+    ${stageHtml || '<p>No hay comentarios ni fotografías adicionales registradas.</p>'}
+    <section class="delivery-stage">
+      <h4>Repuestos agregados</h4>
+      ${repuestos.length
+        ? `<ul>${repuestos.map((item) => `
+            <li>${escapeHtml(item.codigo)} - ${escapeHtml(item.nombre || 'Repuesto')} (${Number(item.cantidad || 1)}): ${money(item.subtotal)}</li>
+          `).join('')}</ul>`
+        : '<p>Sin repuestos registrados.</p>'}
+    </section>
+    <div class="delivery-totals" id="delivery-totals">
+      <span>Monto estimado inicial <strong>${money(pago.monto_estimado_inicial)}</strong></span>
+      <span>Adelanto 25% <strong>${money(pago.adelanto)}</strong></span>
+      <span>Repuestos <strong>${money(totalRepuestos)}</strong></span>
+      <span>Costo de reparación <strong>${money(0)}</strong></span>
+      <span>Monto final <strong>${money(totalRepuestos)}</strong></span>
+      <span>Saldo pendiente <strong>${money(Math.max(0, totalRepuestos - Number(pago.adelanto || 0)))}</strong></span>
+    </div>
+  `;
+}
+
+function updateDeliveryTotals() {
+  if (!deliveryTicket) return;
+  const totals = document.getElementById('delivery-totals');
+  if (!totals) return;
+  const pago = deliveryTicket.pago || {};
+  const totalRepuestos = (deliveryTicket.repuestos_asignados || [])
+    .reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+  const costo = Number(val('entrega-costo') || 0);
+  const montoFinal = totalRepuestos + costo;
+  const saldo = Math.max(0, montoFinal - Number(pago.adelanto || 0));
+  totals.innerHTML = `
+    <span>Monto estimado inicial <strong>${money(pago.monto_estimado_inicial)}</strong></span>
+    <span>Adelanto 25% <strong>${money(pago.adelanto)}</strong></span>
+    <span>Repuestos <strong>${money(totalRepuestos)}</strong></span>
+    <span>Costo de reparación <strong>${money(costo)}</strong></span>
+    <span>Monto final <strong>${money(montoFinal)}</strong></span>
+    <span>Saldo pendiente <strong>${money(saldo)}</strong></span>
+  `;
+}
+
 function showFormError(msg) {
   formError.textContent = msg;
   formError.hidden = false;
@@ -43,7 +149,7 @@ function showFormError(msg) {
 
 function clearFormError() { formError.hidden = true; }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ LOGIN Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 loginForm.addEventListener('submit', async e => {
   e.preventDefault();
   loginError.hidden = true;
@@ -74,7 +180,7 @@ function showApp() {
   appView.hidden = false;
 }
 
-// ── Lógica del ojito para la contraseña ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ LÃ³gica del ojito para la contraseÃ±a Ã¢â€â‚¬Ã¢â€â‚¬
 const togglePwd = document.getElementById('toggle-pwd');
 const pwdInput = document.getElementById('password');
 
@@ -85,7 +191,7 @@ if (togglePwd && pwdInput) {
     // Cambiamos el tipo de input
     pwdInput.type = isText ? 'password' : 'text';
     
-    // Cambiamos el ícono SVG
+    // Cambiamos el Ã­cono SVG
     togglePwd.innerHTML = isText 
       ? `<svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>` 
       : `<svg viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
@@ -104,7 +210,7 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   confirmSection.hidden = true;
 });
 
-// ── BUSCAR CLIENTE POR DNI ────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ BUSCAR CLIENTE POR DNI Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 document.getElementById('btn-buscar-cliente').addEventListener('click', async () => {
   const dni = val('dni');
   if (!/^\d{8}$/.test(dni)) {
@@ -121,18 +227,18 @@ document.getElementById('btn-buscar-cliente').addEventListener('click', async ()
       setVal('telefono', ultimo.telefono || '');
       setVal('email',    ultimo.email || '');
       dniHint.style.color = '#1B5E20';
-      dniHint.textContent = `✓ Cliente encontrado: ${ultimo.cliente}`;
+      dniHint.textContent = `Cliente encontrado: ${ultimo.cliente}`;
     } else {
       dniHint.style.color = '#E65100';
-      dniHint.textContent = 'Cliente nuevo — complete los datos manualmente.';
+      dniHint.textContent = 'Cliente nuevo - complete los datos manualmente.';
     }
   } catch (_) {
     dniHint.style.color = '#E65100';
-    dniHint.textContent = 'Cliente nuevo — complete los datos manualmente.';
+    dniHint.textContent = 'Cliente nuevo - complete los datos manualmente.';
   }
 });
 
-// ── CARGAR TECNICOS ───────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ CARGAR TECNICOS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function loadTecnicos() {
   const select = document.getElementById('id_tecnico');
   try {
@@ -149,7 +255,7 @@ async function loadTecnicos() {
   }
 }
 
-// ── REGISTRAR EQUIPO ──────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ REGISTRAR EQUIPO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 registroForm.addEventListener('submit', async e => {
   e.preventDefault();
   clearFormError();
@@ -174,6 +280,10 @@ registroForm.addEventListener('submit', async e => {
     },
     descripcion_problema: val('descripcion'),
     id_tecnico: val('id_tecnico') || undefined,
+    pago_inicial: {
+      monto_estimado_inicial: Number(val('monto_estimado') || 0),
+      medio_pago: val('medio_adelanto') || 'Pendiente',
+    },
   };
 
   const btn = document.getElementById('btn-registrar');
@@ -223,7 +333,7 @@ registroForm.addEventListener('submit', async e => {
   }
 });
 
-// ── REGISTRAR OTRO ────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ REGISTRAR OTRO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 document.getElementById('btn-nuevo').addEventListener('click', () => {
   registroForm.reset();
   dniHint.textContent = '';
@@ -232,12 +342,81 @@ document.getElementById('btn-nuevo').addEventListener('click', () => {
   confirmSection.hidden = true;
 });
 
-// ── IMPRIMIR ──────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ IMPRIMIR Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 document.getElementById('btn-imprimir').addEventListener('click', () => {
   window.print();
 });
 
-// ── ARRANQUE ──────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-buscar-entrega').addEventListener('click', async () => {
+  const dni = val('entrega-dni');
+  const idTicket = val('entrega-ticket').toUpperCase();
+  deliveryMessage.textContent = '';
+  deliverySummary.hidden = true;
+  deliveryPayment.hidden = true;
+  deliveryTicket = null;
+
+  if (!/^\d{8}$/.test(dni) || !idTicket) {
+    deliveryMessage.textContent = 'Ingrese DNI y código de ticket.';
+    return;
+  }
+
+  try {
+    const data = await apiJson('/api/tickets/consulta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dni, id_ticket: idTicket }),
+    });
+    const ticket = data.data;
+    deliveryTicket = ticket;
+    renderDeliveryDetails(ticket);
+    deliverySummary.hidden = false;
+    if (ticket.estado !== 'Listo') {
+      deliveryMessage.textContent = 'Este equipo aún no está listo para retiro.';
+      return;
+    }
+    deliveryPayment.hidden = false;
+    updateDeliveryTotals();
+  } catch (error) {
+    deliveryMessage.textContent = error.message;
+  }
+});
+
+document.getElementById('entrega-costo').addEventListener('input', updateDeliveryTotals);
+
+document.getElementById('btn-confirmar-entrega').addEventListener('click', async () => {
+  if (!deliveryTicket) return;
+  try {
+    const data = await apiJson(`/api/tickets/${deliveryTicket.id_ticket}/entrega`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        costo_reparacion: Number(val('entrega-costo') || 0),
+        medio_pago: val('entrega-medio'),
+        comprobante: val('entrega-comprobante'),
+      }),
+    });
+    const pago = data.data?.pago || {};
+    deliveryMessage.textContent = data.message;
+    deliverySummary.insertAdjacentHTML('beforeend', `
+      <section class="simulated-receipt">
+        <div>
+          <span>COMPROBANTE SIMULADO</span>
+          <strong>${escapeHtml(pago.comprobante || 'Comprobante')}</strong>
+        </div>
+        <p>Ticket: ${escapeHtml(data.data?.codigo_ticket || deliveryTicket.codigo_ticket)}</p>
+        <p>Medio de pago: ${escapeHtml(pago.medio_pago || val('entrega-medio'))}</p>
+        <p>Monto final: ${money(pago.monto_final)} · Adelanto: ${money(pago.adelanto)} · Saldo registrado: ${money(pago.saldo_pendiente)}</p>
+        <p>${escapeHtml(pago.correo_simulado || 'Correo simulado preparado con el detalle del pago.')}</p>
+      </section>
+    `);
+    deliveryTicket.estado = 'Entregado';
+    deliveryPayment.hidden = true;
+  } catch (error) {
+    deliveryMessage.textContent = error.message;
+  }
+});
+// Ã¢â€â‚¬Ã¢â€â‚¬ ARRANQUE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 if (token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));

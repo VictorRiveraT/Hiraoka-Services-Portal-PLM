@@ -248,6 +248,15 @@ const construirEtapasTicket = (ticket, eventos = []) => {
     ESTADOS.map((estado) => [estado, { observaciones: [], evidencias: [] }])
   );
 
+  const observacionIngreso = String(ticket.descripcion_problema || "").trim();
+  if (observacionIngreso) {
+    etapas.Recibido.observaciones.push({
+      texto: observacionIngreso,
+      fecha_hora: ticket.fecha_ingreso,
+      tipo: "recepcion",
+    });
+  }
+
   const fotosEntrada = Array.isArray(ticket.fotos_entrada) ? ticket.fotos_entrada : [];
   etapas.Recibido.evidencias.push(...fotosEntrada);
 
@@ -288,6 +297,66 @@ const construirEtapasTicket = (ticket, eventos = []) => {
   return etapas;
 };
 
+const obtenerRepuestosDesdeEventos = (eventos = []) => {
+  const porCodigo = new Map();
+
+  eventos
+    .filter((evento) => evento.accion === "Asignacion de Repuestos a Ticket")
+    .forEach((evento) => {
+      const detalle = evento.detalle || {};
+      const repuestosLegacy = detalle.legacy && Array.isArray(detalle.legacy.repuestos)
+        ? detalle.legacy.repuestos
+        : [];
+      const repuestosPayload = Array.isArray(detalle.repuestos) ? detalle.repuestos : [];
+      const repuestos = repuestosLegacy.length ? repuestosLegacy : repuestosPayload;
+
+      repuestos.forEach((item) => {
+        const codigo = normalizarCodigoRepuesto(item.codigo);
+        if (!codigo) return;
+        const actual = porCodigo.get(codigo) || {
+          codigo,
+          nombre: item.nombre || item.descripcion || codigo,
+          cantidad: 0,
+          precio_unitario: Number(item.precio_unitario || item.precio || 0),
+          subtotal: 0,
+        };
+        const cantidad = Number(item.cantidad || 1);
+        actual.cantidad += cantidad;
+        actual.precio_unitario = Number(item.precio_unitario || item.precio || actual.precio_unitario || 0);
+        actual.subtotal += Number(item.subtotal || (actual.precio_unitario * cantidad) || 0);
+        porCodigo.set(codigo, actual);
+      });
+    });
+
+  return Array.from(porCodigo.values()).map((item) => ({
+    ...item,
+    subtotal: Number(item.subtotal.toFixed(2)),
+  }));
+};
+
+const obtenerPagoDesdeEventos = (eventos = []) => {
+  const inicial = eventos
+    .filter((evento) => evento.accion === "Registro de Pago Inicial")
+    .at(-1)?.detalle || {};
+  const entrega = eventos
+    .filter((evento) => evento.accion === "Pago y Entrega de Ticket")
+    .at(-1)?.detalle || {};
+
+  return {
+    monto_estimado_inicial: Number(inicial.monto_estimado_inicial || 0),
+    adelanto: Number(inicial.adelanto || 0),
+    medio_adelanto: inicial.medio_pago || null,
+    costo_reparacion: Number(entrega.costo_reparacion || 0),
+    monto_repuestos: Number(entrega.monto_repuestos || 0),
+    monto_final: Number(entrega.monto_final || 0),
+    saldo_pendiente: Number(entrega.saldo_pendiente || 0),
+    medio_pago_final: entrega.medio_pago || null,
+    comprobante: entrega.comprobante || null,
+    correo_simulado: entrega.correo_simulado || null,
+    pagado: Boolean(entrega.pagado),
+  };
+};
+
 const agregarHistorialATickets = async (db, tickets) => {
   if (!tickets.length) return tickets;
 
@@ -313,6 +382,8 @@ const agregarHistorialATickets = async (db, tickets) => {
       ...ticket,
       historial,
       etapas: construirEtapasTicket(ticket, historial),
+      repuestos_asignados: obtenerRepuestosDesdeEventos(historial),
+      pago: obtenerPagoDesdeEventos(historial),
     };
   });
 };
@@ -415,6 +486,7 @@ const getTicketById = async (req, res) => {
     }
 
     const [ticket] = await agregarHistorialATickets(pool, result.rows);
+
     return res.status(200).json({
       success: true,
       data: ticket,
@@ -609,6 +681,30 @@ const asignarRepuestosTicket = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Ticket no encontrado",
+      });
+    }
+
+    const auditoriaRepuestos = await client.query(
+      `SELECT detalle
+       FROM log_auditoria
+       WHERE entidad_afectada = 'tickets'
+        AND id_entidad = $1
+        AND accion = 'Asignacion de Repuestos a Ticket'
+        AND resultado = 'Exitoso'`,
+      [String(ticket.id_ticket)]
+    );
+    const yaAsignados = new Set(
+      obtenerRepuestosDesdeEventos(auditoriaRepuestos.rows.map((row) => ({
+        accion: "Asignacion de Repuestos a Ticket",
+        detalle: row.detalle,
+      }))).map((item) => item.codigo)
+    );
+    const duplicados = repuestos.filter((item) => yaAsignados.has(item.codigo));
+    if (duplicados.length) {
+      return res.status(409).json({
+        success: false,
+        message: "El repuesto ya fue agregado al ticket. Ajusta cantidad en el registro existente si corresponde.",
+        duplicados,
       });
     }
   } catch (error) {
@@ -1217,7 +1313,7 @@ const getMetricasDashboard = async (req, res) => {
   }
 
   try {
-    const [porEstado, tiempoPromedio, tecnicoTop, nps] = await Promise.all([
+    const [porEstado, tiempoPromedio, tecnicoTop, nps, repuestosAudit] = await Promise.all([
       pool.query(
         `SELECT estado, COUNT(*)::int AS total
          FROM tickets
@@ -1248,6 +1344,15 @@ const getMetricasDashboard = async (req, res) => {
         [periodo.desde, periodo.hasta]
       ),
       pool.query(`SELECT to_regclass('public.nps_respuestas') AS tabla`),
+      pool.query(
+        `SELECT
+          COUNT(*) FILTER (WHERE resultado = 'Exitoso')::int AS asignaciones_stock,
+          COUNT(*) FILTER (WHERE resultado = 'Fallido')::int AS pedidos_especiales
+         FROM log_auditoria
+         WHERE accion = 'Asignacion de Repuestos a Ticket'
+           AND fecha_hora BETWEEN $1 AND $2`,
+        [periodo.desde, periodo.hasta]
+      ),
     ]);
 
     let npsData = {
@@ -1278,6 +1383,10 @@ const getMetricasDashboard = async (req, res) => {
       npsData = { disponible: true, ...npsResult.rows[0] };
     }
 
+    const repuestosStock = Number(repuestosAudit.rows[0].asignaciones_stock || 0);
+    const pedidosEspeciales = Number(repuestosAudit.rows[0].pedidos_especiales || 0);
+    const totalRepuestos = repuestosStock + pedidosEspeciales;
+
     return res.status(200).json({
       success: true,
       periodo: {
@@ -1289,6 +1398,11 @@ const getMetricasDashboard = async (req, res) => {
         tiempo_promedio_resolucion_horas: Number(tiempoPromedio.rows[0].horas || 0),
         tecnico_mas_tickets_cerrados: tecnicoTop.rows[0] || null,
         satisfaccion_nps: npsData,
+        eficiencia_repuestos: {
+          repuestos_stock: repuestosStock,
+          pedidos_especiales: pedidosEspeciales,
+          porcentaje_stock: totalRepuestos ? Math.round((repuestosStock / totalRepuestos) * 100) : null,
+        },
       },
     });
   } catch (error) {
@@ -1309,7 +1423,7 @@ const crearTicket = async (req, res) => {
     });
   }
 
-  const { cliente, equipo, descripcion_problema, id_tecnico } = req.body;
+  const { cliente, equipo, descripcion_problema, id_tecnico, pago_inicial } = req.body;
 
   if (!cliente?.dni || !cliente?.nombre || !equipo?.numero_serie || !equipo?.modelo || !descripcion_problema) {
     return res.status(400).json({
@@ -1403,6 +1517,8 @@ const crearTicket = async (req, res) => {
     );
 
     const ticket = nuevoTicket.rows[0];
+    const montoEstimado = Number(pago_inicial?.monto_estimado_inicial || 0);
+    const adelanto = Number((montoEstimado * 0.25).toFixed(2));
 
     await registrarAuditoria(client, {
       idUsuario: req.user?.id_usuario || null,
@@ -1415,6 +1531,20 @@ const crearTicket = async (req, res) => {
       },
       ip: req.ip,
     });
+
+    if (montoEstimado > 0) {
+      await registrarAuditoria(client, {
+        idUsuario: req.user?.id_usuario || null,
+        accion: "Registro de Pago Inicial",
+        idEntidad: ticket.id_ticket,
+        detalle: {
+          monto_estimado_inicial: montoEstimado,
+          adelanto,
+          medio_pago: pago_inicial?.medio_pago || "Pendiente",
+        },
+        ip: req.ip,
+      });
+    }
 
     await client.query('COMMIT');
 
@@ -1436,6 +1566,134 @@ const crearTicket = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error interno al registrar el ticket.',
+    });
+  } finally {
+    client.release();
+  }
+};
+
+const registrarEntregaTicket = async (req, res) => {
+  const { id } = req.params;
+  const idUsuario = req.user && req.user.id_usuario;
+  const {
+    costo_reparacion = 0,
+    medio_pago = "Efectivo",
+    comprobante = "Boleta",
+  } = req.body || {};
+
+  if (!esUuidValido(id)) {
+    return res.status(400).json({
+      success: false,
+      message: "El id del ticket no tiene un formato valido.",
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const usuario = await obtenerUsuarioConRol(client, idUsuario);
+    if (!usuario || !usuario.activo || !["Agente", "Administrador"].includes(usuario.rol)) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        success: false,
+        message: "Solo Agente o Administrador pueden registrar la entrega.",
+      });
+    }
+
+    const ticketResult = await client.query(
+      `SELECT t.id_ticket, t.codigo_ticket, t.estado, c.email AS email_cliente
+       FROM tickets t
+       JOIN clientes c ON t.id_cliente = c.id_cliente
+       WHERE t.id_ticket = $1
+       FOR UPDATE`,
+      [id]
+    );
+    const ticket = ticketResult.rows[0];
+    if (!ticket) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: "Ticket no encontrado." });
+    }
+    if (ticket.estado !== "Listo") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        success: false,
+        message: "Solo se puede entregar un equipo en estado Listo para retiro.",
+      });
+    }
+
+    const auditoria = await client.query(
+      `SELECT accion, detalle, fecha_hora
+       FROM log_auditoria
+       WHERE entidad_afectada = 'tickets' AND id_entidad = $1
+       ORDER BY fecha_hora ASC`,
+      [String(id)]
+    );
+    const repuestos = obtenerRepuestosDesdeEventos(auditoria.rows);
+    const pagoActual = obtenerPagoDesdeEventos(auditoria.rows);
+    const montoRepuestos = Number(repuestos.reduce((sum, item) => sum + Number(item.subtotal || 0), 0).toFixed(2));
+    const costo = Number(costo_reparacion || 0);
+    const montoFinal = Number((montoRepuestos + costo).toFixed(2));
+    const saldoPendiente = Number(Math.max(0, montoFinal - Number(pagoActual.adelanto || 0)).toFixed(2));
+
+    await client.query(
+      `UPDATE tickets
+       SET estado = 'Entregado', fecha_entrega_real = COALESCE(fecha_entrega_real, NOW())
+       WHERE id_ticket = $1`,
+      [id]
+    );
+
+    await registrarAuditoria(client, {
+      idUsuario,
+      accion: "Pago y Entrega de Ticket",
+      idEntidad: id,
+      detalle: {
+        pagado: true,
+        medio_pago,
+        comprobante,
+        costo_reparacion: costo,
+        monto_repuestos: montoRepuestos,
+        monto_estimado_inicial: pagoActual.monto_estimado_inicial,
+        adelanto: pagoActual.adelanto,
+        monto_final: montoFinal,
+        saldo_pendiente: saldoPendiente,
+        correo_simulado: ticket.email_cliente
+          ? `Correo simulado enviado a ${ticket.email_cliente} con ${comprobante.toLowerCase()} y detalle de pago.`
+          : "Cliente sin correo registrado; comprobante simulado disponible en mostrador.",
+      },
+      ip: req.ip,
+    });
+
+    await client.query("COMMIT");
+
+    return res.status(200).json({
+      success: true,
+      message: "Pago simulado registrado y equipo entregado correctamente.",
+      data: {
+        id_ticket: id,
+        codigo_ticket: ticket.codigo_ticket,
+        estado: "Entregado",
+        pago: {
+          costo_reparacion: costo,
+          monto_repuestos: montoRepuestos,
+          monto_estimado_inicial: pagoActual.monto_estimado_inicial,
+          adelanto: pagoActual.adelanto,
+          monto_final: montoFinal,
+          saldo_pendiente: saldoPendiente,
+          medio_pago,
+          comprobante,
+          correo_simulado: ticket.email_cliente
+            ? `Correo simulado enviado a ${ticket.email_cliente} con ${comprobante.toLowerCase()} y detalle de pago.`
+            : "Cliente sin correo registrado; comprobante simulado disponible en mostrador.",
+        },
+      },
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error al registrar entrega:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno al registrar la entrega.",
     });
   } finally {
     client.release();
@@ -1643,6 +1901,7 @@ module.exports = {
   getHistorialProducto,
   getMetricasDashboard,
   crearTicket,
+  registrarEntregaTicket,
   responderNps,
   subirEvidencias,
  };

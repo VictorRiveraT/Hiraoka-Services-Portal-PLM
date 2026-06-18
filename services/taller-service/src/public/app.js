@@ -1,4 +1,4 @@
-// ── Referencias DOM ──────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Referencias DOM Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const loginView   = document.getElementById('login-view');
 const appView     = document.getElementById('app-view');
 const loginForm   = document.getElementById('login-form');
@@ -40,11 +40,11 @@ const garantiaSerieLbl     = document.getElementById('garantia-serie-label');
 const garantiaBadgeBlock   = document.getElementById('garantia-badge-block');
 const garantiaDetails      = document.getElementById('garantia-details');
 
-// ── Estado ────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Estado Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const ESTADO_LABELS = {
   Recibido: 'Recibido',
-  Diagnosticando: 'En diagnostico',
-  Reparando: 'En reparacion',
+  Diagnosticando: 'En diagnóstico',
+  Reparando: 'En reparación',
   Listo: 'Listo para retiro',
   Entregado: 'Entregado',
 };
@@ -59,8 +59,9 @@ let selectedTicket = null;
 let selectedNextState = '';
 let refreshTimer = null;
 let preferences = JSON.parse(localStorage.getItem('taller_preferences') || '{}');
+let repuestosEncontrados = [];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function fmtFecha(value) {
   if (!value) return 'Por confirmar';
   return new Date(value).toLocaleDateString('es-PE', {
@@ -152,66 +153,61 @@ document.getElementById('evidence-upload').addEventListener('change', async (eve
 
 function setUpdateFormMode(mode, ticket, estado) {
    const obsInput = document.getElementById('observations');
-   const obsLabel = document.querySelector('label[for="observations"]'); // Capturamos el título
+   const obsLabel = document.querySelector('label[for="observations"]');
    const saveBtn = document.getElementById('save-button');
    const evidenceUploadLabel = document.querySelector('.evidence-button');
    const evidenceInput = document.getElementById('evidence-upload');
    const gallery = document.getElementById('evidence-gallery');
-   
-   // 1. Restaurar visibilidad por defecto antes de aplicar la lógica
+
    if (obsLabel) obsLabel.style.display = 'block';
    if (obsInput) obsInput.style.display = 'block';
    if (gallery) gallery.style.display = 'flex';
 
-   // 2. Lógica especial si el estado es "Listo para retiro" o "Entregado"
-   if (estado === 'Listo' || estado === 'Entregado') {
-      if (obsLabel) obsLabel.style.display = 'none';
-      if (obsInput) {
-          obsInput.style.display = 'none';
-          obsInput.required = false; // Fundamental: quitamos el required para que el form deje guardar
-          obsInput.value = 'Equipo listo para entrega al cliente.'; // Nota interna automática
-      }
+   if (estado === 'Entregado') {
+      if (obsLabel) obsLabel.textContent = 'Servicio entregado al cliente:';
+      obsInput.readOnly = true;
+      obsInput.required = false;
+      obsInput.value = 'Equipo entregado. La orden ya no permite cambios desde taller.';
+      saveBtn.style.display = 'none';
       if (evidenceUploadLabel) evidenceUploadLabel.style.display = 'none';
       if (evidenceInput) evidenceInput.style.display = 'none';
-      if (gallery) gallery.style.display = 'none';
-
-      // Si apenas vamos a pasar a "Listo", mostramos el botón guardar. Si ya es pasado, lo ocultamos.
-      if (mode === 'edit') {
-          saveBtn.style.display = 'block';
-          saveBtn.disabled = false;
-          clearMessage();
-      } else {
-          saveBtn.style.display = 'none';
-      }
-      return; // Cortamos la función aquí porque ya configuramos este estado
+      renderEvidenceGallery(ticket._stateData?.Entregado?.evidencias || [], true);
+      return;
    }
 
-   // 3. Lógica para Diagnóstico y Reparación
    if (mode === 'edit') {
-      if (obsLabel) obsLabel.textContent = 'Observaciones Tecnicas (Requerido)'; // Título de acción
+      if (obsLabel) {
+        obsLabel.textContent = estado === 'Listo'
+          ? 'Mensaje final para el cliente (requerido)'
+          : 'Observaciones técnicas (requerido)';
+      }
       obsInput.readOnly = false;
       obsInput.required = true;
-      obsInput.value = '';
+      obsInput.value = estado === 'Listo' ? 'Dispositivo listo para retiro.' : '';
       saveBtn.style.display = 'block';
-      
-      if (evidenceUploadLabel) evidenceUploadLabel.style.display = 'inline-block';
-      if (evidenceInput) evidenceInput.style.display = ''; 
-      
+
+      if (evidenceUploadLabel) {
+        evidenceUploadLabel.style.display = 'inline-block';
+        evidenceUploadLabel.textContent = estado === 'Listo'
+          ? 'Adjuntar foto final del dispositivo'
+          : 'Adjuntar fotografías de evidencia';
+      }
+      if (evidenceInput) evidenceInput.style.display = '';
+
       renderEvidenceGallery([], true);
       saveBtn.disabled = false;
       clearMessage();
    } else if (mode === 'view') {
       const data = ticket._stateData[estado] || { observaciones: '', evidencias: [] };
-      if (obsLabel) obsLabel.textContent = 'Observaciones registradas en esta etapa:'; // Título de historial
+      if (obsLabel) obsLabel.textContent = 'Observaciones registradas en esta etapa:';
       obsInput.readOnly = true;
-      obsInput.required = false; // Quitamos validación en modo lectura
+      obsInput.required = false;
       obsInput.value = data.observaciones || 'No se registraron observaciones en esta etapa.';
-      
+
       saveBtn.style.display = 'none';
-      const canUploadCurrentEvidence = estado === ticket.estado;
-      if (evidenceUploadLabel) evidenceUploadLabel.style.display = canUploadCurrentEvidence ? 'inline-block' : 'none';
+      if (evidenceUploadLabel) evidenceUploadLabel.style.display = 'none';
       if (evidenceInput) evidenceInput.style.display = 'none';
-      
+
       renderEvidenceGallery(data.evidencias, true);
    }
 }
@@ -225,14 +221,45 @@ function renderEvidenceGallery(urls, clear = true) {
             const img = document.createElement('img');
             img.src = url; 
             img.className = 'evidence-thumbnail';
-            // ¡FÍJATE AQUÍ! Ya no hay etiqueta <a>. El clic dispara el visor.
+            // Â¡FÃJATE AQUÃ! Ya no hay etiqueta <a>. El clic dispara el visor.
             img.addEventListener('click', () => openLightbox(urls, index));
             gallery.appendChild(img);
         });
     }
 }
 
-// ── Lógica del ojito para la contraseña ──
+function renderAssignedParts(ticket) {
+  let panel = document.getElementById('assigned-parts-panel');
+  if (!panel) {
+    panel = document.createElement('section');
+    panel.id = 'assigned-parts-panel';
+    panel.className = 'assigned-parts-panel';
+    stateGrid.insertAdjacentElement('afterend', panel);
+  }
+
+  const repuestos = ticket.repuestos_asignados || [];
+  if (!repuestos.length) {
+    panel.innerHTML = '<h3>Repuestos agregados</h3><p class="muted">Aún no se agregaron repuestos a esta reparación.</p>';
+    return;
+  }
+
+  const total = repuestos.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+  panel.innerHTML = `
+    <h3>Repuestos agregados</h3>
+    <ul>
+      ${repuestos.map((item) => `
+        <li>
+          <strong>${item.codigo}</strong>
+          <span>${item.nombre || 'Repuesto'}</span>
+          <em>${item.cantidad || 1} und. · S/. ${Number(item.subtotal || 0).toFixed(2)}</em>
+        </li>
+      `).join('')}
+    </ul>
+    <p class="parts-total">Total repuestos: S/. ${total.toFixed(2)}</p>
+  `;
+}
+
+// Ã¢â€â‚¬Ã¢â€â‚¬ LÃ³gica del ojito para la contraseÃ±a Ã¢â€â‚¬Ã¢â€â‚¬
 const togglePwd = document.getElementById('toggle-pwd');
 const pwdInput = document.getElementById('password');
 
@@ -243,14 +270,14 @@ if (togglePwd && pwdInput) {
     // Cambiamos el tipo de input
     pwdInput.type = isText ? 'password' : 'text';
     
-    // Cambiamos el ícono SVG
+    // Cambiamos el Ã­cono SVG
     togglePwd.innerHTML = isText 
       ? `<svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>` 
       : `<svg viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
   });
 }
 
-// ── Navegacion entre vistas ───────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Navegacion entre vistas Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function setActiveNav(activeBtn) {
   [navTickets, navRepuestos, navGarantia, navHistorial, navConfig]
     .forEach((b) => b.classList.remove('active'));
@@ -346,7 +373,7 @@ function clearMessage() {
   panelMessage.textContent = '';
 }
 
-// ── Tickets: lista y detalle ──────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Tickets: lista y detalle Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function visibleTickets() {
   const search = searchInput.value.trim().toLowerCase();
   const estado = stateFilter.value;
@@ -482,10 +509,11 @@ function renderDetail(ticket) {
   });
   ticket._stateData = stateData;
 
+  renderAssignedParts(ticket);
   renderStateButtons(ticket);
 }
 
-// ── HSPP88: Consulta de Repuestos ─────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ HSPP88: Consulta de Repuestos Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function buscarRepuesto() {
   const query = repuestoQuery.value.trim();
   const categoria = repuestoCategoria.value;
@@ -502,6 +530,7 @@ async function buscarRepuesto() {
     });
 
     const items = data.data || data.repuestos || [];
+    repuestosEncontrados = items;
 
     if (!items.length) {
       repuestoTbody.innerHTML = `<tr class="repuesto-empty-row"><td colspan="6">No se encontraron repuestos con esos criterios.</td></tr>`;
@@ -515,7 +544,7 @@ async function buscarRepuesto() {
         ? `<span class="stock-badge disponible">${stockNum} unidades</span>`
         : `<span class="stock-badge agotado">0 unidades (Agotado)</span>`;
       const accionBtn = disponible
-        ? `<button class="solicitar-btn" type="button" data-id="${item.id || item.codigo}">Solicitar</button>`
+        ? `<button class="solicitar-btn" type="button" data-id="${item.codigo || item.id}">Solicitar</button>`
         : `<button class="reservar-btn" type="button" data-id="${item.id || item.codigo}">Reservar Pedido</button>`;
       const precio = item.precio ? `S/. ${Number(item.precio).toFixed(2)}` : '-';
       const eta = item.eta || (disponible ? 'Inmediato (Sede Central)' : '3 a 5 dias habiles');
@@ -538,7 +567,29 @@ async function buscarRepuesto() {
   }
 }
 
-// ── HSPP89: Verificacion de Garantia ─────────────────────────────────────────
+async function solicitarRepuesto(codigo) {
+  if (!selectedTicket) {
+    showToast('Abre primero un ticket para asociar el repuesto.');
+    showMain();
+    return;
+  }
+
+  try {
+    const data = await apiJson(`/api/tickets/${selectedTicket.id_ticket}/repuestos`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ codigo, cantidad: 1 }),
+    });
+    showToast(data.message || 'Repuesto agregado al ticket.');
+    await loadTickets();
+    const actualizado = tickets.find((ticket) => ticket.id_ticket === selectedTicket.id_ticket);
+    if (actualizado) showDetail(actualizado);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+// Ã¢â€â‚¬Ã¢â€â‚¬ HSPP89: Verificacion de Garantia Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function verificarGarantia() {
   const serial = garantiaSerial.value.trim();
   if (!serial) {
@@ -639,7 +690,7 @@ async function buscarHistorial() {
   }
 }
 
-// ── Lógica del Visor de Imágenes (Lightbox) ──
+// Ã¢â€â‚¬Ã¢â€â‚¬ LÃ³gica del Visor de ImÃ¡genes (Lightbox) Ã¢â€â‚¬Ã¢â€â‚¬
 let galleryUrls = [];
 let currentImgIndex = 0;
 
@@ -664,7 +715,7 @@ document.getElementById('lightbox-next').addEventListener('click', () => {
     document.getElementById('lightbox-img').src = galleryUrls[currentImgIndex];
 });
 
-// ── Carga inicial ─────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Carga inicial Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function loadTickets() {
   const data = await apiJson('/api/tickets/tecnico/mis-tickets', {
     headers: authHeaders(),
@@ -676,7 +727,7 @@ async function loadTickets() {
   renderTicketList();
 }
 
-// ── Eventos ───────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Eventos Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   loginError.hidden = true;
@@ -751,6 +802,11 @@ stateFilter.addEventListener('change', renderTicketList);
 // HSPP88 eventos
 btnBuscarRepuesto.addEventListener('click', buscarRepuesto);
 repuestoQuery.addEventListener('keydown', (e) => { if (e.key === 'Enter') buscarRepuesto(); });
+repuestoTbody.addEventListener('click', (event) => {
+  const button = event.target.closest('.solicitar-btn');
+  if (!button) return;
+  solicitarRepuesto(button.dataset.id);
+});
 
 // HSPP89 eventos
 btnVerificarGarantia.addEventListener('click', verificarGarantia);
