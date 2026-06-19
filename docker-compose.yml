@@ -1,9 +1,16 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
 
   postgres:
     image: postgres:16-alpine
     container_name: hiraoka_db
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -20,6 +27,7 @@ services:
     image: postgres:16-alpine
     container_name: hiraoka_db_migrate
     restart: "no"
+    logging: *default-logging
     environment:
       PGPASSWORD: ${DB_PASSWORD}
     command:
@@ -39,8 +47,9 @@ services:
     build: ./services/auth-service
     container_name: hiraoka_auth
     restart: unless-stopped
+    logging: *default-logging
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=3001
       - DB_HOST=postgres
       - DB_USER=${DB_USER}
@@ -48,6 +57,7 @@ services:
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=30m
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
     depends_on:
       - postgres
     networks:
@@ -57,8 +67,9 @@ services:
     build: ./services/api-gateway
     container_name: hiraoka_gateway
     restart: unless-stopped
+    logging: *default-logging
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=3000
       - AUTH_SERVICE_URL=http://auth-service:3001
       - TICKET_SERVICE_URL=http://ticket-service:3002
@@ -66,6 +77,10 @@ services:
       - NOTIFICATION_SERVICE_URL=http://notification-service:3004
       - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
       - ADMIN_SERVICE_URL=http://admin-service:3006
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-1000}
+      - AUTH_RATE_LIMIT_WINDOW_MS=${AUTH_RATE_LIMIT_WINDOW_MS:-900000}
+      - AUTH_RATE_LIMIT_MAX=${AUTH_RATE_LIMIT_MAX:-10}
     depends_on:
       - auth-service
       - ticket-service
@@ -80,16 +95,19 @@ services:
     build: ./services/ticket-service
     container_name: hiraoka_ticket
     restart: unless-stopped
+    logging: *default-logging
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=3002
       - DB_HOST=postgres
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
       - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
       - NOTIFICATION_TIMEOUT_MS=${NOTIFICATION_TIMEOUT_MS:-3000}
+      - NOTIFICATION_INTERNAL_TOKEN=${NOTIFICATION_INTERNAL_TOKEN:-dev-notification-token}
       - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
       - LEGACY_TIMEOUT_MS=${LEGACY_TIMEOUT_MS:-2000}
       - LEGACY_CIRCUIT_BREAKER_FAILURES=${LEGACY_CIRCUIT_BREAKER_FAILURES:-3}
@@ -110,12 +128,12 @@ services:
     image: nginx:alpine
     container_name: hiraoka_nginx
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - api-gateway
     networks:
@@ -125,14 +143,16 @@ services:
       build: ./services/taller-service
       container_name: hiraoka_taller
       restart: unless-stopped
+      logging: *default-logging
       environment:
-        - NODE_ENV=development
+        - NODE_ENV=${NODE_ENV:-development}
         - PORT=3003
         - DB_HOST=postgres
         - DB_USER=${DB_USER}
         - DB_PASSWORD=${DB_PASSWORD}
         - DB_NAME=${DB_NAME}
         - JWT_SECRET=${JWT_SECRET}
+        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
       depends_on:
         - postgres
       networks:
@@ -142,6 +162,7 @@ services:
       build: ./services/legacy-service
       container_name: hiraoka_legacy
       restart: unless-stopped
+      logging: *default-logging
       environment:
         - NODE_ENV=${NODE_ENV:-development}
         - PORT=3005
@@ -153,6 +174,7 @@ services:
       build: ./services/notification-service
       container_name: hiraoka_notification
       restart: unless-stopped
+      logging: *default-logging
       environment:
         - NODE_ENV=${NODE_ENV:-development}
         - PORT=${NOTIFICATION_SERVICE_PORT:-3004}
@@ -160,6 +182,7 @@ services:
         - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}
         - PORTAL_URL=${PORTAL_URL:-http://localhost}
         - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+        - NOTIFICATION_INTERNAL_TOKEN=${NOTIFICATION_INTERNAL_TOKEN:-dev-notification-token}
       healthcheck:
         test: ["CMD", "wget", "-qO-", "http://localhost:3004/health"]
         interval: 10s
@@ -173,14 +196,16 @@ services:
       build: ./services/admin-service
       container_name: hiraoka_admin
       restart: unless-stopped
+      logging: *default-logging
       environment:
-        - NODE_ENV=development
+        - NODE_ENV=${NODE_ENV:-development}
         - PORT=3006
         - DB_HOST=postgres
         - DB_USER=${DB_USER}
         - DB_PASSWORD=${DB_PASSWORD}
         - DB_NAME=${DB_NAME}
         - JWT_SECRET=${JWT_SECRET}
+        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
       depends_on:
         - postgres
       networks:

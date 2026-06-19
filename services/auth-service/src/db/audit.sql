@@ -22,6 +22,8 @@ ALTER TABLE log_auditoria
 CREATE INDEX IF NOT EXISTS idx_audit_usuario   ON log_auditoria(id_usuario);
 CREATE INDEX IF NOT EXISTS idx_audit_fecha     ON log_auditoria(fecha_hora DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_accion    ON log_auditoria(accion);
+CREATE INDEX IF NOT EXISTS idx_audit_entidad_historial
+  ON log_auditoria(entidad_afectada, id_entidad, fecha_hora);
 
 -- ============================================================
 -- POLÍTICA DE INMUTABILIDAD (Ley N° 29733)
@@ -30,3 +32,19 @@ CREATE INDEX IF NOT EXISTS idx_audit_accion    ON log_auditoria(accion);
 -- ============================================================
 REVOKE UPDATE ON log_auditoria FROM PUBLIC;
 REVOKE DELETE ON log_auditoria FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION impedir_mutacion_log_auditoria()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'log_auditoria es inmutable: % no permitido', TG_OP
+    USING ERRCODE = '42501';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_log_auditoria_inmutable ON log_auditoria;
+CREATE TRIGGER trg_log_auditoria_inmutable
+BEFORE UPDATE OR DELETE OR TRUNCATE ON log_auditoria
+FOR EACH STATEMENT
+EXECUTE FUNCTION impedir_mutacion_log_auditoria();

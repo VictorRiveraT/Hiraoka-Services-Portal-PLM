@@ -48,7 +48,7 @@ const upload = multer({
 router.post("/consulta", consultarTicketSeguro);
 
 // GET /tickets/dni/:dni — Consulta todos los tickets de un cliente por DNI
-router.get("/dni/:dni", validateDni, getTicketsByDni);
+router.get("/dni/:dni", verifyToken, validateDni, getTicketsByDni);
 
 // GET /tickets/tecnico/mis-tickets — Panel tecnico: tickets asignados
 router.get("/tecnico/mis-tickets", verifyToken, getTicketsAsignadosTecnico);
@@ -84,7 +84,7 @@ router.post("/:id/repuestos", verifyToken, asignarRepuestosTicket);
 router.get("/:id/garantia", consultarGarantiaTicket);
 
 // GET /tickets/:id — Consulta un ticket por su UUID
-router.get("/:id", getTicketById);
+router.get("/:id", verifyToken, getTicketById);
 
 router.post("/:id/evidencias", verifyToken, upload.array("fotos", 5), subirEvidencias);
 

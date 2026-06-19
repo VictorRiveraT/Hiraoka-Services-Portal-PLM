@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,48 @@ const cachedProxy = (key, options) => {
 };
 app.set('trust proxy', 1);
 
+const parsePositiveInt = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const logEvent = (level, event, details = {}) => {
+  const entry = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level,
+    service: 'api-gateway',
+    event,
+    ...details,
+  });
+  (level === 'error' ? console.error : console.log)(entry);
+};
+
+const sanitizePath = (value) =>
+  String(value || '')
+    .replace(/\/dni\/\d{8}(?=\/|$|\?)/gi, '/dni/[REDACTED]')
+    .replace(/([?&](?:token|email|dni)=)[^&]*/gi, '$1[REDACTED]');
+
+app.use((req, res, next) => {
+  const requestId = String(req.headers['x-request-id'] || crypto.randomUUID()).slice(0, 100);
+  const startedAt = process.hrtime.bigint();
+  req.headers['x-request-id'] = requestId;
+  res.setHeader('X-Request-Id', requestId);
+
+  res.on('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+    logEvent(res.statusCode >= 500 ? 'error' : 'info', 'http_request', {
+      request_id: requestId,
+      method: req.method,
+      path: sanitizePath(req.originalUrl),
+      status: res.statusCode,
+      duration_ms: Number(durationMs.toFixed(2)),
+      ip: req.ip,
+      user_agent: req.get('user-agent') || null,
+    });
+  });
+  next();
+});
+
 // ── Seguridad ─────────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -22,18 +65,26 @@ app.use(helmet({
 
 // Global: 1000 requests por IP cada 15 minutos
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000,
+  windowMs: parsePositiveInt(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+  max: parsePositiveInt(process.env.RATE_LIMIT_MAX, 1000),
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, _next, options) => {
+    logEvent('warn', 'rate_limit_exceeded', {
+      request_id: res.getHeader('X-Request-Id'),
+      path: sanitizePath(req.originalUrl),
+      ip: req.ip,
+    });
+    res.status(options.statusCode).send(options.message);
+  },
   message: { error: 'Demasiadas solicitudes. Intenta más tarde.' },
 });
 app.use(globalLimiter);
 
 // Auth: 10 intentos por IP cada 15 minutos (proteccion fuerza bruta)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
+  windowMs: parsePositiveInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+  max: parsePositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 10),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiados intentos de autenticacion. Espera 15 minutos.' },

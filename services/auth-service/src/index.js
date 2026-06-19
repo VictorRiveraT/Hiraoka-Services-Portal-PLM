@@ -8,6 +8,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
+  throw new Error('JWT_SECRET debe tener al menos 32 caracteres en produccion.');
+}
+
 const cspDirectives = {
   defaultSrc: ["'self'"],
   baseUri: ["'self'"],
@@ -31,7 +35,7 @@ app.use(helmet({
   },
   xXssProtection: false,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '64kb' }));
 
 // ── Health check (para el API Gateway) ───────────────────────────
 app.get('/health', async (req, res) => {

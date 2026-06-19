@@ -23,6 +23,7 @@ const CODIGO_REPUESTO_REGEX = /^REP-\d{3,}$/i;
 const NOTIFICATION_SERVICE_URL =
   process.env.NOTIFICATION_SERVICE_URL || "http://notification-service:3004";
 const NOTIFICATION_TIMEOUT_MS = Number(process.env.NOTIFICATION_TIMEOUT_MS || 3000);
+const NOTIFICATION_INTERNAL_TOKEN = process.env.NOTIFICATION_INTERNAL_TOKEN || "";
 const ROLES_REPUESTOS = ["Tecnico", "Agente"];
 const REPUESTOS_COMPATIBLES = {
   laptop: ["REP-006", "REP-007", "REP-008"],
@@ -388,7 +389,7 @@ const agregarHistorialATickets = async (db, tickets) => {
   });
 };
 
-const enviarNotificacionCambioEstado = async (ticket, estadoNuevo) => {
+const enviarNotificacionCambioEstado = async (ticket, estadoNuevo, datosExtra = {}) => {
   if (!ticket.email_cliente) {
     throw new Error("El cliente no tiene email registrado.");
   }
@@ -407,7 +408,12 @@ const enviarNotificacionCambioEstado = async (ticket, estadoNuevo) => {
   try {
     const response = await fetch(`${NOTIFICATION_SERVICE_URL}/notifications/send`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(NOTIFICATION_INTERNAL_TOKEN
+          ? { "X-Internal-Token": NOTIFICATION_INTERNAL_TOKEN }
+          : {}),
+      },
       signal: controller.signal,
       body: JSON.stringify({
         id_ticket: ticket.codigo_ticket || ticket.id_ticket,
@@ -422,6 +428,7 @@ const enviarNotificacionCambioEstado = async (ticket, estadoNuevo) => {
           fecha,
           producto,
           numero_serie: ticket.numero_serie,
+          ...datosExtra,
         },
       }),
     });
@@ -503,8 +510,17 @@ const getTicketById = async (req, res) => {
 // GET /tickets/dni/:dni - FEAT01: Consulta por DNI del cliente
 const getTicketsByDni = async (req, res) => {
   const { dni } = req.params;
+  const idUsuario = req.user && req.user.id_usuario;
 
   try {
+    const usuario = await obtenerUsuarioConRol(pool, idUsuario);
+    if (!usuario || !usuario.activo || !["Agente", "Administrador"].includes(usuario.rol)) {
+      return res.status(403).json({
+        success: false,
+        message: "Solo un Agente o Administrador puede consultar tickets por DNI.",
+      });
+    }
+
     const result = await pool.query(
       `SELECT 
         t.id_ticket,
@@ -1439,6 +1455,37 @@ const crearTicket = async (req, res) => {
     });
   }
 
+  const nombreCliente = String(cliente.nombre).trim();
+  const numeroSerie = String(equipo.numero_serie).trim();
+  const modelo = String(equipo.modelo).trim();
+  const marca = String(equipo.marca || "").trim();
+  const descripcion = String(descripcion_problema).trim();
+  const telefono = String(cliente.telefono || "").trim();
+  const email = String(cliente.email || "").trim().toLowerCase();
+  const montoEstimado = Number(pago_inicial?.monto_estimado_inicial || 0);
+
+  if (!nombreCliente || nombreCliente.length > 150) {
+    return res.status(400).json({ success: false, message: "El nombre del cliente no es valido." });
+  }
+  if (!numeroSerie || numeroSerie.length > 100 || !modelo || modelo.length > 80 || marca.length > 80) {
+    return res.status(400).json({ success: false, message: "Los datos del equipo exceden el formato permitido." });
+  }
+  if (!descripcion || descripcion.length > 5000) {
+    return res.status(400).json({ success: false, message: "La descripcion del problema no es valida." });
+  }
+  if (telefono && !/^\+?\d{7,15}$/.test(telefono)) {
+    return res.status(400).json({ success: false, message: "El telefono debe contener entre 7 y 15 digitos." });
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: "El email del cliente no es valido." });
+  }
+  if (!Number.isFinite(montoEstimado) || montoEstimado < 0 || montoEstimado > 1000000) {
+    return res.status(400).json({ success: false, message: "El monto estimado no es valido." });
+  }
+  if (id_tecnico && !esUuidValido(id_tecnico)) {
+    return res.status(400).json({ success: false, message: "El id_tecnico no tiene formato UUID valido." });
+  }
+
   const pool = require('../config/database');
   const client = await pool.connect();
 
@@ -1457,12 +1504,12 @@ const crearTicket = async (req, res) => {
       // Actualizar datos si cambiaron
       await client.query(
         'UPDATE clientes SET nombre = $1, telefono = $2, email = $3 WHERE id_cliente = $4',
-        [cliente.nombre, cliente.telefono || null, cliente.email || null, id_cliente]
+        [nombreCliente, telefono || null, email || null, id_cliente]
       );
     } else {
       const nuevoCliente = await client.query(
         'INSERT INTO clientes (nombre, dni, telefono, email) VALUES ($1, $2, $3, $4) RETURNING id_cliente',
-        [cliente.nombre, cliente.dni, cliente.telefono || null, cliente.email || null]
+        [nombreCliente, cliente.dni, telefono || null, email || null]
       );
       id_cliente = nuevoCliente.rows[0].id_cliente;
     }
@@ -1470,7 +1517,7 @@ const crearTicket = async (req, res) => {
     // 2. Buscar o crear producto
     let productoResult = await client.query(
       'SELECT id_producto FROM productos WHERE numero_serie = $1',
-      [equipo.numero_serie]
+      [numeroSerie]
     );
 
     let id_producto;
@@ -1480,13 +1527,24 @@ const crearTicket = async (req, res) => {
       const nuevoProducto = await client.query(
         'INSERT INTO productos (nombre, marca, modelo, numero_serie) VALUES ($1, $2, $3, $4) RETURNING id_producto',
         [
-          equipo.modelo,
-          equipo.marca || null,
-          equipo.modelo,
-          equipo.numero_serie,
+          modelo,
+          marca || null,
+          modelo,
+          numeroSerie,
         ]
       );
       id_producto = nuevoProducto.rows[0].id_producto;
+    }
+
+    if (id_tecnico) {
+      const tecnico = await obtenerUsuarioConRol(client, id_tecnico);
+      if (!tecnico || !tecnico.activo || tecnico.rol !== "Tecnico") {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          success: false,
+          message: "El tecnico indicado no existe, esta inactivo o no tiene rol Tecnico.",
+        });
+      }
     }
 
     // Serializa la asignacion del correlativo publico para evitar duplicados.
@@ -1511,13 +1569,12 @@ const crearTicket = async (req, res) => {
         id_cliente,
         id_producto,
         id_tecnico || null,
-        descripcion_problema,
+        descripcion,
         req.user?.id_usuario || null,
       ]
     );
 
     const ticket = nuevoTicket.rows[0];
-    const montoEstimado = Number(pago_inicial?.monto_estimado_inicial || 0);
     const adelanto = Number((montoEstimado * 0.25).toFixed(2));
 
     await registrarAuditoria(client, {
@@ -1527,7 +1584,7 @@ const crearTicket = async (req, res) => {
       detalle: {
         estado: "Recibido",
         cliente: cliente.dni,
-        producto: equipo.numero_serie,
+        producto: numeroSerie,
       },
       ip: req.ip,
     });
@@ -1602,9 +1659,19 @@ const registrarEntregaTicket = async (req, res) => {
     }
 
     const ticketResult = await client.query(
-      `SELECT t.id_ticket, t.codigo_ticket, t.estado, c.email AS email_cliente
+      `SELECT
+        t.id_ticket,
+        t.codigo_ticket,
+        t.estado,
+        c.nombre AS nombre_cliente,
+        c.email AS email_cliente,
+        p.nombre AS producto,
+        p.marca,
+        p.modelo,
+        p.numero_serie
        FROM tickets t
        JOIN clientes c ON t.id_cliente = c.id_cliente
+       JOIN productos p ON t.id_producto = p.id_producto
        WHERE t.id_ticket = $1
        FOR UPDATE`,
       [id]
@@ -1658,17 +1725,54 @@ const registrarEntregaTicket = async (req, res) => {
         monto_final: montoFinal,
         saldo_pendiente: saldoPendiente,
         correo_simulado: ticket.email_cliente
-          ? `Correo simulado enviado a ${ticket.email_cliente} con ${comprobante.toLowerCase()} y detalle de pago.`
-          : "Cliente sin correo registrado; comprobante simulado disponible en mostrador.",
+          ? `Comprobante preparado para envio a ${ticket.email_cliente}.`
+          : "Cliente sin correo registrado; comprobante disponible en mostrador.",
       },
       ip: req.ip,
     });
 
     await client.query("COMMIT");
 
+    const pagoNotificacion = {
+      costo_reparacion: costo,
+      monto_repuestos: montoRepuestos,
+      monto_estimado_inicial: pagoActual.monto_estimado_inicial,
+      adelanto: pagoActual.adelanto,
+      monto_final: montoFinal,
+      saldo_pendiente: saldoPendiente,
+      medio_pago,
+      comprobante,
+    };
+    let notificacion = { enviada: false, message: "Notificacion pendiente." };
+    try {
+      const notificationResult = await enviarNotificacionCambioEstado(ticket, "Entregado", {
+        pago: pagoNotificacion,
+      });
+      notificacion = { enviada: true, message: notificationResult.message };
+      await registrarAuditoriaIndependiente({
+        idUsuario,
+        accion: "Notificacion de Entrega Enviada",
+        idEntidad: id,
+        detalle: { comprobante, destinatario: ticket.email_cliente },
+        ip: req.ip,
+      });
+    } catch (notificationError) {
+      notificacion = { enviada: false, message: "Entrega registrada; correo pendiente de reintento." };
+      await registrarAuditoriaIndependiente({
+        idUsuario,
+        accion: "Fallo de Notificacion de Entrega",
+        idEntidad: id,
+        detalle: { comprobante, error: notificationError.message },
+        ip: req.ip,
+        resultado: "Fallido",
+      }).catch((auditError) => console.error("Error al auditar notificacion de entrega:", auditError));
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Pago simulado registrado y equipo entregado correctamente.",
+      message: notificacion.enviada
+        ? "Pago registrado, equipo entregado y comprobante enviado por correo."
+        : "Pago registrado y equipo entregado. El correo quedo pendiente de reintento.",
       data: {
         id_ticket: id,
         codigo_ticket: ticket.codigo_ticket,
@@ -1683,9 +1787,10 @@ const registrarEntregaTicket = async (req, res) => {
           medio_pago,
           comprobante,
           correo_simulado: ticket.email_cliente
-            ? `Correo simulado enviado a ${ticket.email_cliente} con ${comprobante.toLowerCase()} y detalle de pago.`
+            ? `${notificacion.message} Destinatario: ${ticket.email_cliente}.`
             : "Cliente sin correo registrado; comprobante simulado disponible en mostrador.",
         },
+        notificacion,
       },
     });
   } catch (error) {
@@ -1704,6 +1809,7 @@ const registrarEntregaTicket = async (req, res) => {
 const responderNps = async (req, res) => {
   const lookup = getTicketLookup(req.params.id);
   const puntuacion = Number(req.body?.puntuacion);
+  const dni = String(req.body?.dni || "").trim();
   const comentarioEsValido =
     req.body?.comentario === undefined || typeof req.body.comentario === "string";
   const comentario =
@@ -1713,6 +1819,12 @@ const responderNps = async (req, res) => {
     return res.status(400).json({
       success: false,
       message: "El ticket debe tener formato UUID o codigo TK-AAAA-000.",
+    });
+  }
+  if (!/^\d{8}$/.test(dni)) {
+    return res.status(400).json({
+      success: false,
+      message: "El DNI es requerido para validar la encuesta.",
     });
   }
   if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 10) {
@@ -1732,13 +1844,15 @@ const responderNps = async (req, res) => {
   try {
     await client.query("BEGIN");
     const ticketResult = await client.query(
-      `SELECT id_ticket, id_cliente, estado, encuesta_completada
-       FROM tickets
+      `SELECT t.id_ticket, t.id_cliente, t.estado, t.encuesta_completada
+       FROM tickets t
+       JOIN clientes c ON c.id_cliente = t.id_cliente
        WHERE
-        ($1::uuid IS NOT NULL AND id_ticket = $1::uuid)
-        OR ($2::text IS NOT NULL AND codigo_ticket = $2)
+        (($1::uuid IS NOT NULL AND t.id_ticket = $1::uuid)
+        OR ($2::text IS NOT NULL AND t.codigo_ticket = $2))
+        AND c.dni = $3
        FOR UPDATE`,
-      [lookup.uuid, lookup.codigo]
+      [lookup.uuid, lookup.codigo, dni]
     );
     const ticket = ticketResult.rows[0];
 

@@ -219,7 +219,7 @@ document.getElementById('btn-buscar-cliente').addEventListener('click', async ()
     return;
   }
   try {
-    const data = await apiJson(`/api/tickets/dni/${dni}`);
+    const data = await apiJson(`/api/tickets/dni/${dni}`, { headers: authHeaders() });
     const tickets = data.data || [];
     if (tickets.length > 0) {
       const ultimo = tickets[0];
@@ -407,7 +407,7 @@ document.getElementById('btn-confirmar-entrega').addEventListener('click', async
         <p>Ticket: ${escapeHtml(data.data?.codigo_ticket || deliveryTicket.codigo_ticket)}</p>
         <p>Medio de pago: ${escapeHtml(pago.medio_pago || val('entrega-medio'))}</p>
         <p>Monto final: ${money(pago.monto_final)} · Adelanto: ${money(pago.adelanto)} · Saldo registrado: ${money(pago.saldo_pendiente)}</p>
-        <p>${escapeHtml(pago.correo_simulado || 'Correo simulado preparado con el detalle del pago.')}</p>
+        <p>${escapeHtml(pago.correo_simulado || 'Notificacion preparada con el detalle del pago y comprobante PDF.')}</p>
       </section>
     `);
     deliveryTicket.estado = 'Entregado';

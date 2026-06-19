@@ -109,13 +109,14 @@ function showEmpty(message) {
 }
 
 function warrantyBadge(status) {
-  if (!status) return '<span class="warranty-badge warranty-loading">Verificando...</span>';
+  if (status === undefined) return '<span class="warranty-badge warranty-loading">Verificando...</span>';
   const map = {
     activa:     ['warranty-activa',     'Activa'],
     expirada:   ['warranty-expirada',   'Expirada'],
     por_vencer: ['warranty-por-vencer', 'Por vencer'],
+    sin_registro: ['warranty-none',      'Sin garantia registrada'],
   };
-  const [cls, label] = map[status] || ['warranty-loading', status];
+  const [cls, label] = map[status] || map.sin_registro;
   return `<span class="warranty-badge ${cls}">${label}</span>`;
 }
 
@@ -123,14 +124,14 @@ async function fetchWarranty(idTicket) {
   try {
     const res = await fetch(`/api/tickets/${idTicket}/garantia`);
     const data = await res.json();
-    if (!res.ok || !data.success) return null;
+    if (!res.ok || !data.success) return 'sin_registro';
     const g = data.data?.garantia;
-    if (!g) return null;
+    if (!g) return 'sin_registro';
     if (!g.tiene_garantia) return 'expirada';
     const diasRestantes = g.dias_restantes ?? 999;
     return diasRestantes <= 30 ? 'por_vencer' : 'activa';
   } catch {
-    return null;
+    return 'sin_registro';
   }
 }
 
@@ -219,10 +220,7 @@ function renderResults(tickets) {
   setMode('view-results');
 }
 
-function iconForStep(estado, active) {
-  if (estado === 'Reparando' && active) {
-    return '<svg viewBox="0 0 24 24"><path d="m14.7 6.3 3-3a4 4 0 0 1-5 5l-7.4 7.4a2.1 2.1 0 1 1-3-3l7.4-7.4a4 4 0 0 1 5-5Z"/></svg>';
-  }
+function iconForStep() {
   return '<svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg>';
 }
 
@@ -237,7 +235,9 @@ function renderDetail(ticket) {
   $('nps-detail-action').onclick = () => openNps(ticket.id_ticket || ticket.codigo_ticket);
 
   if (ticket.fecha_estimada_entrega && estado !== 'Entregado') {
-    $('det-fecha-txt').textContent = `Fecha estimada de entrega: ${fmtFecha(ticket.fecha_estimada_entrega)}`;
+    $('det-fecha-txt').textContent = estado === 'Listo'
+      ? `Disponible para retiro desde: ${fmtFecha(ticket.fecha_estimada_entrega)}`
+      : `Fecha estimada de entrega: ${fmtFecha(ticket.fecha_estimada_entrega)}`;
     $('det-fecha').hidden = false;
   } else {
     $('det-fecha').hidden = true;
@@ -291,7 +291,7 @@ ESTADOS.forEach((stepEstado, index) => {
       const imgsHtml = dataForStep.evidencias.length 
         ? `<div class="tl-gallery">
             ${dataForStep.evidencias.map((url, i) => 
-              `<img src="${url}" class="evidence-thumbnail tl-img-click" data-estado="${stepEstado}" data-index="${i}" style="cursor:zoom-in;" />`
+              `<img src="${url}" class="evidence-thumbnail tl-img-click" data-estado="${stepEstado}" data-index="${i}" alt="Evidencia tecnica de ${stepEstado}" />`
             ).join('')}
            </div>` 
         : '';
@@ -312,9 +312,9 @@ ESTADOS.forEach((stepEstado, index) => {
     }
 
     const step = document.createElement('section');
-    step.className = `tl-step${active ? ' active' : ''}${pending ? ' pending' : ''}`;
+    step.className = `tl-step state-${stepEstado}${active ? ' active' : ''}${pending ? ' pending' : ''}`;
     step.innerHTML = `
-      <div class="tl-dot ${done ? 'done' : ''} ${active ? 'active' : ''} ${stepEstado === 'Reparando' && active ? 'repair' : ''}" aria-hidden="true">${done || active ? iconForStep(stepEstado, active) : ''}</div>
+      <div class="tl-dot ${done ? 'done' : ''} ${active ? 'active' : ''}" aria-hidden="true">${done || active ? iconForStep() : ''}</div>
       <div class="tl-body">
         <h3 class="tl-title">${copy.title}</h3>
         <p class="tl-desc">${pending ? 'Pendiente de actualizacion.' : copy.detail}</p>
@@ -377,7 +377,7 @@ async function consultar(event) {
     return;
   }
 
-  if (ticket && !UUID_RE.test(ticket) && !TICKET_CODE_RE.test(ticket)) {
+  if (!ticket || (!UUID_RE.test(ticket) && !TICKET_CODE_RE.test(ticket))) {
     $('inp-ticket').classList.add('error');
     $('err-ticket').classList.add('visible');
     $('inp-ticket').focus();
@@ -388,29 +388,16 @@ async function consultar(event) {
   setLoading(true);
 
   try {
-    if (ticket) {
-      const response = await fetch('/api/tickets/consulta', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dni, id_ticket: ticket }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        showEmpty(data.message || 'No encontramos un ticket con esos datos.');
-      } else {
-        renderDetail(data.data);
-      }
-      return;
-    }
-
-    const response = await fetch(`/api/tickets/dni/${encodeURIComponent(dni)}`);
+    const response = await fetch('/api/tickets/consulta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dni, id_ticket: ticket }),
+    });
     const data = await response.json();
     if (!response.ok || !data.success) {
-      showEmpty(data.message || 'Hubo un problema al consultar. Intenta mas tarde.');
-    } else if (!data.total) {
-      showEmpty();
+      showEmpty(data.message || 'No encontramos un ticket con esos datos.');
     } else {
-      renderResults(data.data || []);
+      renderDetail(data.data);
     }
   } catch (error) {
     showEmpty('No se pudo conectar con el servidor. Verifica tu conexion e intenta otra vez.');
@@ -457,6 +444,7 @@ $('nps-form').addEventListener('submit', async (event) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        dni: currentDni,
         puntuacion: selectedNpsScore,
         comentario: $('nps-comment').value.trim(),
       }),

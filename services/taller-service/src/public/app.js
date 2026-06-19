@@ -158,10 +158,12 @@ function setUpdateFormMode(mode, ticket, estado) {
    const evidenceUploadLabel = document.querySelector('.evidence-button');
    const evidenceInput = document.getElementById('evidence-upload');
    const gallery = document.getElementById('evidence-gallery');
+   const evidenceSection = document.querySelector('.evidence-section');
 
    if (obsLabel) obsLabel.style.display = 'block';
    if (obsInput) obsInput.style.display = 'block';
    if (gallery) gallery.style.display = 'flex';
+   if (evidenceSection) evidenceSection.classList.toggle('read-only', mode === 'view' || estado === 'Entregado');
 
    if (estado === 'Entregado') {
       if (obsLabel) obsLabel.textContent = 'Servicio entregado al cliente:';
@@ -182,9 +184,13 @@ function setUpdateFormMode(mode, ticket, estado) {
           : 'Observaciones técnicas (requerido)';
       }
       obsInput.readOnly = false;
+      obsInput.disabled = false;
       obsInput.required = true;
       obsInput.value = estado === 'Listo' ? 'Dispositivo listo para retiro.' : '';
       saveBtn.style.display = 'block';
+      saveBtn.textContent = estado === 'Listo'
+        ? 'Confirmar y Notificar al Cliente'
+        : 'Guardar Registro';
 
       if (evidenceUploadLabel) {
         evidenceUploadLabel.style.display = 'inline-block';
@@ -201,6 +207,7 @@ function setUpdateFormMode(mode, ticket, estado) {
       const data = ticket._stateData[estado] || { observaciones: '', evidencias: [] };
       if (obsLabel) obsLabel.textContent = 'Observaciones registradas en esta etapa:';
       obsInput.readOnly = true;
+      obsInput.disabled = true;
       obsInput.required = false;
       obsInput.value = data.observaciones || 'No se registraron observaciones en esta etapa.';
 
@@ -513,6 +520,17 @@ function renderDetail(ticket) {
   renderStateButtons(ticket);
 }
 
+function populateHistoryTechnicians() {
+  const select = document.getElementById('historial-tecnico');
+  if (!select) return;
+  const current = select.value;
+  const technicians = [...new Set(tickets.map((ticket) => ticket.tecnico_asignado).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'));
+  select.innerHTML = '<option value="">Todos los tecnicos</option>' +
+    technicians.map((name) => `<option value="${name}">${name}</option>`).join('');
+  if (technicians.includes(current)) select.value = current;
+}
+
 // Ã¢â€â‚¬Ã¢â€â‚¬ HSPP88: Consulta de Repuestos Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function buscarRepuesto() {
   const query = repuestoQuery.value.trim();
@@ -658,6 +676,7 @@ function renderGarantiaResult(data) {
 
 async function buscarHistorial() {
   const serial = document.getElementById('historial-serial').value.trim();
+  const technician = document.getElementById('historial-tecnico').value;
   const feedback = document.getElementById('historial-feedback');
   const list = document.getElementById('historial-list');
   if (!serial) {
@@ -674,7 +693,10 @@ async function buscarHistorial() {
       headers: authHeaders(),
     });
     const state = document.getElementById('historial-state').value;
-    const items = (data.data || []).filter((item) => !state || item.estado === state);
+    const items = (data.data || []).filter((item) =>
+      (!state || item.estado === state) &&
+      (!technician || item.tecnico === technician)
+    );
     feedback.textContent = items.length ? `${items.length} atencion(es) encontrada(s).` : 'No hay atenciones registradas.';
     list.innerHTML = items.map((item) => `
       <article class="history-card border-${item.estado}">
@@ -721,7 +743,8 @@ async function loadTickets() {
     headers: authHeaders(),
   });
 
-  tickets = data.data || [];
+    tickets = data.data || [];
+    populateHistoryTechnicians();
   showApp();
   showMain();
   renderTicketList();
@@ -842,6 +865,9 @@ document.querySelectorAll('[name="font-size"]').forEach((option) => option.addEv
   document.body.dataset.fontSize = option.value;
 }));
 document.getElementById('historial-state').addEventListener('change', buscarHistorial);
+document.getElementById('historial-tecnico').addEventListener('change', () => {
+  if (document.getElementById('historial-serial').value.trim()) buscarHistorial();
+});
 document.getElementById('btn-exportar-historial').addEventListener('click', () => {
   const rows = [['Ticket', 'Equipo', 'Estado', 'Ingreso'], ...tickets.map((ticket) => [
     ticketCode(ticket), productName(ticket), ticket.estado, fmtFecha(ticket.fecha_ingreso),

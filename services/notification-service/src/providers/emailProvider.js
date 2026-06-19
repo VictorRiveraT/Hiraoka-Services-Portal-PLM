@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const sgMail = require('@sendgrid/mail');
+const PDFDocument = require('pdfkit');
 
 const TEMPLATE_DIR = path.join(__dirname, '..', 'templates');
 
@@ -42,6 +43,39 @@ const buildText = (tipo, datos) => {
   return `Hola ${datos.nombre}, el ticket ${datos.ticket} cambio a estado ${datos.estado}. Fecha estimada: ${datos.fecha}.`;
 };
 
+const buildReceiptPdf = (datos) =>
+  new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `Comprobante ${datos.ticket}` } });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const pago = datos.pago || {};
+    doc.fontSize(20).fillColor('#CC0000').text('Hiraoka Services');
+    doc.moveDown(0.4).fontSize(13).fillColor('#111827').text(`${pago.comprobante || 'Comprobante'} de servicio tecnico`);
+    doc.moveDown();
+    doc.fontSize(11);
+    [
+      ['Ticket', datos.ticket],
+      ['Cliente', datos.nombre],
+      ['Equipo', datos.producto || '-'],
+      ['Estado', datos.estado || 'Entregado'],
+      ['Medio de pago', pago.medio_pago || '-'],
+      ['Costo de reparacion', `S/. ${Number(pago.costo_reparacion || 0).toFixed(2)}`],
+      ['Repuestos', `S/. ${Number(pago.monto_repuestos || 0).toFixed(2)}`],
+      ['Adelanto', `S/. ${Number(pago.adelanto || 0).toFixed(2)}`],
+      ['Monto final', `S/. ${Number(pago.monto_final || 0).toFixed(2)}`],
+      ['Saldo registrado', `S/. ${Number(pago.saldo_pendiente || 0).toFixed(2)}`],
+    ].forEach(([label, value]) => {
+      doc.font('Helvetica-Bold').text(`${label}: `, { continued: true });
+      doc.font('Helvetica').text(String(value || '-'));
+    });
+    doc.moveDown(1.5).fontSize(9).fillColor('#6B7280')
+      .text('Documento generado automaticamente por Hiraoka Services.');
+    doc.end();
+  });
+
 const send = async ({ tipo, destinatario, datos }) => {
   const subjectBuilder = SUBJECTS[tipo];
   if (!subjectBuilder) throw new Error(`Plantilla no encontrada para tipo: ${tipo}`);
@@ -63,6 +97,16 @@ const send = async ({ tipo, destinatario, datos }) => {
     html: renderTemplate(tipo, datos),
   };
 
+  if (tipo === 'entregado' && datos.pago) {
+    const receipt = await buildReceiptPdf(datos);
+    msg.attachments = [{
+      content: receipt.toString('base64'),
+      filename: `comprobante-${datos.ticket}.pdf`,
+      type: 'application/pdf',
+      disposition: 'attachment',
+    }];
+  }
+
   const response = await sgMail.send(msg);
   return {
     status: response[0].statusCode,
@@ -71,4 +115,4 @@ const send = async ({ tipo, destinatario, datos }) => {
   };
 };
 
-module.exports = { send };
+module.exports = { send, buildReceiptPdf };

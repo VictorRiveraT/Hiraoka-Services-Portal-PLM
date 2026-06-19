@@ -84,7 +84,7 @@ function fmtFecha(value) {
 
 // ── NAVEGACION ──────────────────────────────────────────────────────────────────
 function setActiveNav(btn) {
-  [navDashboard, navUsuarios, navHistorial, navConfig].forEach(b => b.classList.remove('active'));
+  [navDashboard, navUsuarios, navHistorial, navConfig].filter(Boolean).forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
 
@@ -444,6 +444,7 @@ function renderUsuarios() {
   pagePrev.disabled         = usersPage <= 1;
   pageNext.disabled         = start + PAGE_SIZE >= total;
 
+  const shortId = (id) => id.length > 13 ? `${id.slice(0, 5)}...${id.slice(-5)}` : id;
   usersTbody.innerHTML = page.map(u => {
     const rolClass  = ROL_CLASES[u.rol] || 'role-admin';
     const estClass  = u.estado === 'Activo' ? 'status-activo' : 'status-inactivo';
@@ -452,7 +453,12 @@ function renderUsuarios() {
       : `<button class="action-link activate"   data-id="${u.id}" data-action="activar">Activar Cuenta</button>`;
     return `
       <tr>
-        <td class="muted" title="${u.id}">${u.id}</td>
+        <td>
+          <button class="id-copy" type="button" data-copy-id="${u.id}" title="Copiar ID completo ${u.id}">
+            <span>${shortId(u.id)}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </td>
         <td><strong>${u.nombre}</strong></td>
         <td class="muted">${u.correo}</td>
         <td><span class="role-badge ${rolClass}">${u.rol}</span></td>
@@ -470,6 +476,19 @@ function renderUsuarios() {
 
   usersTbody.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => handleUserAction(btn.dataset.id, btn.dataset.action));
+  });
+  usersTbody.querySelectorAll('[data-copy-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copyId);
+        const label = button.querySelector('span');
+        const previous = label.textContent;
+        label.textContent = 'Copiado';
+        window.setTimeout(() => { label.textContent = previous; }, 1200);
+      } catch {
+        window.prompt('Copie el identificador:', button.dataset.copyId);
+      }
+    });
   });
 }
 
@@ -626,7 +645,7 @@ loginForm.addEventListener('submit', async e => {
 // ── EVENTOS DE NAVEGACION ──────────────────────────────────────────────────────
 navDashboard.addEventListener('click', showDashboard);
 navUsuarios.addEventListener('click', showUsuarios);
-navHistorial.addEventListener('click', showHistorial);
+if (navHistorial) navHistorial.addEventListener('click', showHistorial);
 navConfig.addEventListener('click', showConfig);
 
 document.getElementById('logout-btn').addEventListener('click', () => {

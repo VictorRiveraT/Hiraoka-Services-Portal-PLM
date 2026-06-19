@@ -38,11 +38,16 @@ const SALT_ROUNDS = 12; // según DAS sección 9.1
 
 // ── LOGIN ──────────────────────────────────────────────────────────
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
+  const username = String(req.body?.username || '').trim();
+  const password = String(req.body?.password || '');
   const ip = req.ip;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuario y contraseña son requeridos.' });
+  }
+
+  if (username.length > 60 || password.length > 200) {
+    return res.status(400).json({ error: 'Credenciales con formato invalido.' });
   }
 
   try {
@@ -184,6 +189,13 @@ exports.crearUsuario = async (req, res) => {
 
   if (String(password).length < 8) {
     return res.status(400).json({ error: 'La contrasena debe tener al menos 8 caracteres.' });
+  }
+  if (
+    String(nombre_completo).trim().length > 150 ||
+    !/^[a-zA-Z0-9._-]{3,60}$/.test(String(username).trim()) ||
+    String(password).length > 200
+  ) {
+    return res.status(400).json({ error: 'Los datos del usuario exceden el formato permitido.' });
   }
 
   try {

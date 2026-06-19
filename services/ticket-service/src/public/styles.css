@@ -109,6 +109,8 @@ input {
   top: 50%;
   left: 18px;
   display: none;
+  align-items: center;
+  justify-content: center;
   place-items: center;
   padding: 0;
   transform: translateY(-50%);
@@ -427,6 +429,12 @@ input {
   border-color: #E0E0E0;
 }
 
+.warranty-none {
+  background: #F5F5F5;
+  color: #616161;
+  border-color: #BDBDBD;
+}
+
 .badge {
   min-height: 32px;
   display: inline-flex;
@@ -612,6 +620,7 @@ input {
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border);
+  cursor: zoom-in;
 }
 
 .timeline-card {
@@ -681,11 +690,6 @@ input {
   border-color: var(--success);
 }
 
-.tl-dot.repair {
-  color: var(--red);
-  border-color: transparent;
-}
-
 .tl-dot svg {
   width: 18px;
   height: 18px;
@@ -709,14 +713,35 @@ input {
 
 .tl-step.active .tl-body {
   padding: 22px;
-  border: 2px solid var(--rep-border);
+  border: 2px solid #B8CCE4;
   border-radius: var(--radius-card);
-  background: var(--rep-bg);
+  background: #F3F8FE;
 }
 
 .tl-step.active .tl-title {
-  color: var(--text);
+  color: #174A7E;
 }
+
+.tl-step.state-Diagnosticando.active .tl-body {
+  border-color: #F0C36A;
+  background: #FFF8E8;
+}
+.tl-step.state-Diagnosticando.active .tl-title { color: #8A5A00; }
+.tl-step.state-Reparando.active .tl-body {
+  border-color: #F2A766;
+  background: #FFF4EA;
+}
+.tl-step.state-Reparando.active .tl-title { color: #A64B00; }
+.tl-step.state-Listo.active .tl-body {
+  border-color: #8BC49A;
+  background: #EFF9F1;
+}
+.tl-step.state-Listo.active .tl-title { color: #216E39; }
+.tl-step.state-Entregado.active .tl-body {
+  border-color: #9AA6B2;
+  background: #F5F7F9;
+}
+.tl-step.state-Entregado.active .tl-title { color: #374151; }
 
 .tl-step.pending .tl-title {
   color: var(--muted);
