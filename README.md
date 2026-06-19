@@ -26,9 +26,9 @@ Desarrollado como proyecto universitario en la Universidad Peruana Cayetano Here
 | FEAT01 | Consulta de estado del ticket (portal del cliente) | Listo |
 | FEAT02 | Visualización del detalle técnico del equipo | Listo |
 | FEAT03 | Notificaciones automáticas por email (SendGrid) | En progreso |
-| FEAT04 | Notificaciones automáticas por WhatsApp/SMS | Pendiente |
+| FEAT04 | Notificaciones automáticas por WhatsApp/SMS (Twilio) | Implementado; requiere credenciales |
 | FEAT05 | Registro de entrada y diagnóstico inicial | Pendiente |
-| FEAT06 | Actualización de estado por técnico (PWA offline) | En progreso |
+| FEAT06 | Actualización de estado por técnico (PWA offline) | Implementado |
 | FEAT07 | Historial de vida del producto por número de serie | Pendiente |
 | FEAT08 | Control de acceso granular por roles (RBAC) | En progreso |
 | FEAT09 | Autenticación JWT con log de auditoría inalterable | Listo |
@@ -98,7 +98,7 @@ Desarrollado como proyecto universitario en la Universidad Peruana Cayetano Here
 | auth-service | 3001 | Autenticación y registro de usuarios |
 | ticket-service | 3002 | Gestión de tickets y portal público |
 | taller-service | 3003 | Panel PWA para técnicos de taller |
-| notification-service | 3004 | Notificaciones por email via SendGrid |
+| notification-service | 3004 | Notificaciones por email (SendGrid) y WhatsApp/SMS (Twilio) |
 | legacy-service | 3005 | Mock de APIs legadas de Hiraoka (inventario, garantías) |
 | postgres | 5432 | Base de datos principal |
 
@@ -135,6 +135,10 @@ JWT_SECRET=tu_secreto_minimo_32_caracteres
 NODE_ENV=development
 SENDGRID_API_KEY=tu_api_key_de_sendgrid
 SENDGRID_FROM_EMAIL=noreply@hiraokaservices.lat
+NOTIFICATION_CHANNELS=email,whatsapp
+TWILIO_ACCOUNT_SID=tu_account_sid
+TWILIO_AUTH_TOKEN=tu_auth_token
+TWILIO_WHATSAPP_FROM=+14155238886
 ```
 
 ### 3. Levantar el sistema
@@ -231,7 +235,7 @@ Hiraoka-Services-Portal-PLM/
 
 | Método | Endpoint | Descripción | Auth |
 |--------|----------|-------------|------|
-| POST | `/api/notifications/send` | Enviar notificación por email | No |
+| POST | `/api/notifications/send` | Enviar notificación por email, WhatsApp o SMS | Token interno |
 
 Tipos disponibles: `ticket_recibido`, `en_diagnostico`, `en_reparacion`, `listo_retiro`, `entregado`.
 

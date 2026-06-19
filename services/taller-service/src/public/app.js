@@ -60,6 +60,9 @@ let selectedNextState = '';
 let refreshTimer = null;
 let preferences = JSON.parse(localStorage.getItem('taller_preferences') || '{}');
 let repuestosEncontrados = [];
+const OFFLINE_QUEUE_PREFIX = 'taller_offline_queue';
+const TICKETS_CACHE_PREFIX = 'taller_tickets_cache';
+let syncingOfflineChanges = false;
 
 // Ã¢â€â‚¬Ã¢â€â‚¬ Helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function fmtFecha(value) {
@@ -106,10 +109,106 @@ function showToast(message) {
   window.setTimeout(() => { toast.hidden = true; }, 3500);
 }
 
-function updateConnectionState() {
+function currentUserCacheSuffix() {
+  if (!token) return 'anonymous';
+  try {
+    return parseToken(token).id_usuario || 'anonymous';
+  } catch (_error) {
+    return 'anonymous';
+  }
+}
+
+function offlineQueueKey() {
+  return `${OFFLINE_QUEUE_PREFIX}:${currentUserCacheSuffix()}`;
+}
+
+function ticketsCacheKey() {
+  return `${TICKETS_CACHE_PREFIX}:${currentUserCacheSuffix()}`;
+}
+
+function getOfflineQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(offlineQueueKey()) || '[]');
+  } catch (_error) {
+    return [];
+  }
+}
+
+function saveOfflineQueue(queue) {
+  localStorage.setItem(offlineQueueKey(), JSON.stringify(queue));
+}
+
+function updateSyncStatus() {
   const online = navigator.onLine;
+  const pending = getOfflineQueue().length;
   document.getElementById('sync-banner').hidden = online;
-  document.getElementById('sync-pill').textContent = online ? 'Sincronizado' : 'Sin sincronizar';
+  document.getElementById('sync-pill').textContent = pending
+    ? `${pending} cambio${pending === 1 ? '' : 's'} pendiente${pending === 1 ? '' : 's'}`
+    : online ? 'Sincronizado' : 'Sin sincronizar';
+}
+
+function queueStateChange(ticket, estado, observaciones) {
+  const queue = getOfflineQueue();
+  queue.push({
+    id: `${ticket.id_ticket}-${Date.now()}`,
+    ticketId: ticket.id_ticket,
+    estado,
+    observaciones,
+    createdAt: new Date().toISOString(),
+  });
+  saveOfflineQueue(queue);
+
+  ticket.estado = estado;
+  ticket.observaciones_tecnicas = observaciones;
+  ticket.siguientes_estados = [];
+  localStorage.setItem(ticketsCacheKey(), JSON.stringify(tickets));
+  updateSyncStatus();
+}
+
+async function syncOfflineChanges() {
+  if (!navigator.onLine || !token || syncingOfflineChanges) return;
+  const queue = getOfflineQueue();
+  if (!queue.length) {
+    updateSyncStatus();
+    return;
+  }
+
+  syncingOfflineChanges = true;
+  const pending = [];
+
+  for (let index = 0; index < queue.length; index += 1) {
+    const change = queue[index];
+    try {
+      await apiJson(`/api/tickets/${change.ticketId}/estado`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          estado: change.estado,
+          observaciones: change.observaciones,
+        }),
+      });
+    } catch (error) {
+      pending.push(change);
+      if (/token|sesion|acceso/i.test(error.message)) {
+        pending.push(...queue.slice(index + 1));
+        break;
+      }
+    }
+  }
+
+  saveOfflineQueue(pending);
+  syncingOfflineChanges = false;
+  updateSyncStatus();
+
+  if (pending.length < queue.length) {
+    showToast(`${queue.length - pending.length} cambio(s) offline sincronizado(s).`);
+    await loadTickets().catch(() => {});
+  }
+}
+
+function updateConnectionState() {
+  updateSyncStatus();
+  if (navigator.onLine) syncOfflineChanges().catch(() => {});
 }
 
 document.getElementById('evidence-upload').addEventListener('change', async (event) => {
@@ -739,15 +838,24 @@ document.getElementById('lightbox-next').addEventListener('click', () => {
 
 // Ã¢â€â‚¬Ã¢â€â‚¬ Carga inicial Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function loadTickets() {
-  const data = await apiJson('/api/tickets/tecnico/mis-tickets', {
-    headers: authHeaders(),
-  });
-
+  try {
+    const data = await apiJson('/api/tickets/tecnico/mis-tickets', {
+      headers: authHeaders(),
+    });
     tickets = data.data || [];
-    populateHistoryTechnicians();
+    localStorage.setItem(ticketsCacheKey(), JSON.stringify(tickets));
+  } catch (error) {
+    const cached = JSON.parse(localStorage.getItem(ticketsCacheKey()) || '[]');
+    if (!cached.length) throw error;
+    tickets = cached;
+    showToast('Mostrando la ultima informacion disponible sin conexion.');
+  }
+
+  populateHistoryTechnicians();
   showApp();
   showMain();
   renderTicketList();
+  updateSyncStatus();
 }
 
 // Ã¢â€â‚¬Ã¢â€â‚¬ Eventos Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -781,13 +889,24 @@ updateForm.addEventListener('submit', async (event) => {
   saveButton.disabled = true;
   clearMessage();
 
+  const observaciones = document.getElementById('observations').value.trim();
+
+  if (!navigator.onLine) {
+    queueStateChange(selectedTicket, selectedNextState, observaciones);
+    setMessage('Cambio guardado en este dispositivo. Se sincronizara cuando vuelva la conexion.', true);
+    showToast('Cambio agregado a la cola offline.');
+    renderTicketList();
+    saveButton.disabled = false;
+    return;
+  }
+
   try {
     await apiJson(`/api/tickets/${selectedTicket.id_ticket}/estado`, {
       method: 'PUT',
       headers: authHeaders(),
       body: JSON.stringify({
         estado: selectedNextState,
-        observaciones: document.getElementById('observations').value.trim(),
+        observaciones,
       }),
     });
 
@@ -854,12 +973,21 @@ document.getElementById('config-form').addEventListener('submit', (event) => {
   feedback.hidden = false;
   showToast('Configuracion guardada.');
 });
-document.getElementById('clear-cache').addEventListener('click', () => {
+document.getElementById('clear-cache').addEventListener('click', async () => {
   localStorage.removeItem('taller_preferences');
+  localStorage.removeItem(ticketsCacheKey());
+  localStorage.removeItem(offlineQueueKey());
+  if ('caches' in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames
+      .filter((name) => name.startsWith('hiraoka-taller-'))
+      .map((name) => caches.delete(name)));
+  }
   preferences = {};
   document.body.dataset.fontSize = 'normal';
   showConfigView();
-  showToast('Cache temporal limpiada.');
+  updateSyncStatus();
+  showToast('Cache local y cambios pendientes eliminados.');
 });
 document.querySelectorAll('[name="font-size"]').forEach((option) => option.addEventListener('change', () => {
   document.body.dataset.fontSize = option.value;
@@ -907,6 +1035,13 @@ document.getElementById('download-csv').addEventListener('click', () => {
 window.addEventListener('online', updateConnectionState);
 window.addEventListener('offline', updateConnectionState);
 updateConnectionState();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/taller/service-worker.js', { scope: '/taller/' })
+      .catch((error) => console.error('No se pudo registrar el service worker:', error));
+  });
+}
 
 if (token) {
   Promise.resolve().then(() => {

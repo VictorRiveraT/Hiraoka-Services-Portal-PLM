@@ -1,0 +1,19 @@
+{
+  "name": "Hiraoka Services - Taller",
+  "short_name": "Hiraoka Taller",
+  "description": "Panel para tecnicos con soporte offline y sincronizacion.",
+  "start_url": "/taller/",
+  "scope": "/taller/",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#cc0000",
+  "lang": "es-PE",
+  "icons": [
+    {
+      "src": "/taller/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ const {
 
 const validateDni = require("../middleware/validateDni");
 const verifyToken = require("../middleware/verifyToken");
+const authorizeRoles = require("../middleware/authorizeRoles");
 
 const uploadDir = process.env.UPLOAD_DIR || "/app/uploads/evidencias";
 if (!fs.existsSync(uploadDir)) {
@@ -66,19 +67,19 @@ router.post('/', verifyToken, crearTicket);
 router.post("/:id/nps", responderNps);
 
 // POST /tickets/:id/entrega - Agente registra pago simulado y entrega
-router.post("/:id/entrega", verifyToken, registrarEntregaTicket);
+router.post("/:id/entrega", verifyToken, authorizeRoles("Agente", "Administrador"), registrarEntregaTicket);
 
 // PUT /tickets/:id/estado — Tecnico asignado actualiza estado del ticket
-router.put("/:id/estado", verifyToken, actualizarEstadoTicket);
+router.put("/:id/estado", verifyToken, authorizeRoles("Tecnico"), actualizarEstadoTicket);
 
 // POST /tickets/:id/asignar — Agente/Admin asigna tecnico al ticket
-router.post("/:id/asignar", verifyToken, asignarTecnicoTicket);
+router.post("/:id/asignar", verifyToken, authorizeRoles("Agente", "Administrador"), asignarTecnicoTicket);
 
 // GET /tickets/:id/repuestos — FEAT10: disponibilidad y repuestos asignados
 router.get("/:id/repuestos", consultarRepuestosTicket);
 
 // POST /tickets/:id/repuestos — FEAT11: asigna repuestos y descuenta stock
-router.post("/:id/repuestos", verifyToken, asignarRepuestosTicket);
+router.post("/:id/repuestos", verifyToken, authorizeRoles("Tecnico", "Agente", "Administrador"), asignarRepuestosTicket);
 
 // GET /tickets/:id/garantia — FEAT12: cobertura de garantia
 router.get("/:id/garantia", consultarGarantiaTicket);
@@ -86,7 +87,7 @@ router.get("/:id/garantia", consultarGarantiaTicket);
 // GET /tickets/:id — Consulta un ticket por su UUID
 router.get("/:id", verifyToken, getTicketById);
 
-router.post("/:id/evidencias", verifyToken, upload.array("fotos", 5), subirEvidencias);
+router.post("/:id/evidencias", verifyToken, authorizeRoles("Tecnico"), upload.array("fotos", 5), subirEvidencias);
 
 module.exports = router;
 

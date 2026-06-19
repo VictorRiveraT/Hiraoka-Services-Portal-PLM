@@ -1,4 +1,5 @@
 const emailProvider = require('../providers/emailProvider');
+const twilioProvider = require('../providers/twilioProvider');
 
 const TIPOS_VALIDOS = [
   'estado_cambiado',
@@ -6,6 +7,8 @@ const TIPOS_VALIDOS = [
   'entregado',
 ];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+?\d{7,15}$/;
+const CANALES_VALIDOS = ['email', 'whatsapp', 'sms'];
 
 const sendNotification = async (req, res) => {
   const {
@@ -31,27 +34,35 @@ const sendNotification = async (req, res) => {
     });
   }
 
-  if (canal !== 'email') {
+  if (!CANALES_VALIDOS.includes(canal)) {
     return res.status(400).json({
       success: false,
-      message: `Canal no soportado: ${canal}. Canales disponibles: email`,
+      message: `Canal no soportado: ${canal}. Canales disponibles: ${CANALES_VALIDOS.join(', ')}`,
     });
   }
 
-  const destinatarioEmail =
-    destinatario || email || datos.destinatario || datos.email_cliente;
+  const destinatarioFinal = canal === 'email'
+    ? destinatario || email || datos.destinatario || datos.email_cliente
+    : destinatario || datos.destinatario || datos.telefono || datos.telefono_cliente;
 
-  if (!destinatarioEmail) {
+  if (!destinatarioFinal) {
     return res.status(400).json({
       success: false,
-      message: 'Se requiere destinatario o email para enviar por canal email.',
+      message: `Se requiere destinatario para enviar por canal ${canal}.`,
     });
   }
 
-  if (!EMAIL_REGEX.test(String(destinatarioEmail).trim())) {
+  if (canal === 'email' && !EMAIL_REGEX.test(String(destinatarioFinal).trim())) {
     return res.status(400).json({
       success: false,
       message: 'El destinatario debe tener un formato de email valido.',
+    });
+  }
+
+  if (canal !== 'email' && !PHONE_REGEX.test(String(destinatarioFinal).trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'El destinatario debe tener entre 7 y 15 digitos y puede iniciar con +.',
     });
   }
 
@@ -66,15 +77,17 @@ const sendNotification = async (req, res) => {
       portal_url: datos.portal_url || process.env.PORTAL_URL || 'http://localhost',
     };
 
-    const result = await emailProvider.send({
+    const provider = canal === 'email' ? emailProvider : twilioProvider;
+    const result = await provider.send({
       tipo,
-      destinatario: destinatarioEmail,
+      canal,
+      destinatario: destinatarioFinal,
       datos: variables,
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Notificacion enviada correctamente.',
+      message: `Notificacion por ${canal} enviada correctamente.`,
       result,
     });
   } catch (error) {

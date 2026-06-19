@@ -108,6 +108,7 @@ services:
       - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3004}
       - NOTIFICATION_TIMEOUT_MS=${NOTIFICATION_TIMEOUT_MS:-3000}
       - NOTIFICATION_INTERNAL_TOKEN=${NOTIFICATION_INTERNAL_TOKEN:-dev-notification-token}
+      - NOTIFICATION_CHANNELS=${NOTIFICATION_CHANNELS:-email}
       - LEGACY_SERVICE_URL=${LEGACY_SERVICE_URL:-http://legacy-service:3005}
       - LEGACY_TIMEOUT_MS=${LEGACY_TIMEOUT_MS:-2000}
       - LEGACY_CIRCUIT_BREAKER_FAILURES=${LEGACY_CIRCUIT_BREAKER_FAILURES:-3}
@@ -183,6 +184,10 @@ services:
         - PORTAL_URL=${PORTAL_URL:-http://localhost}
         - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
         - NOTIFICATION_INTERNAL_TOKEN=${NOTIFICATION_INTERNAL_TOKEN:-dev-notification-token}
+        - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+        - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+        - TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM}
+        - TWILIO_SMS_FROM=${TWILIO_SMS_FROM}
       healthcheck:
         test: ["CMD", "wget", "-qO-", "http://localhost:3004/health"]
         interval: 10s

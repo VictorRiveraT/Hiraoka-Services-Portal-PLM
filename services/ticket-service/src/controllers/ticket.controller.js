@@ -390,8 +390,19 @@ const agregarHistorialATickets = async (db, tickets) => {
 };
 
 const enviarNotificacionCambioEstado = async (ticket, estadoNuevo, datosExtra = {}) => {
-  if (!ticket.email_cliente) {
-    throw new Error("El cliente no tiene email registrado.");
+  const canalesConfigurados = String(process.env.NOTIFICATION_CHANNELS || "email")
+    .split(",")
+    .map((canal) => canal.trim().toLowerCase())
+    .filter((canal) => ["email", "whatsapp", "sms"].includes(canal));
+  const destinos = {
+    email: ticket.email_cliente,
+    whatsapp: ticket.telefono_cliente || ticket.telefono,
+    sms: ticket.telefono_cliente || ticket.telefono,
+  };
+  const canales = canalesConfigurados.filter((canal) => destinos[canal]);
+
+  if (!canales.length) {
+    throw new Error("El cliente no tiene un email o telefono compatible con los canales configurados.");
   }
 
   const producto = [ticket.producto, ticket.marca, ticket.modelo]
@@ -402,49 +413,67 @@ const enviarNotificacionCambioEstado = async (ticket, estadoNuevo, datosExtra = 
       ? formatearFecha(ticket.fecha_entrega_real)
       : formatearFecha(ticket.fecha_estimada_entrega);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), NOTIFICATION_TIMEOUT_MS);
+  const resultados = [];
 
-  try {
-    const response = await fetch(`${NOTIFICATION_SERVICE_URL}/notifications/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(NOTIFICATION_INTERNAL_TOKEN
-          ? { "X-Internal-Token": NOTIFICATION_INTERNAL_TOKEN }
-          : {}),
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        id_ticket: ticket.codigo_ticket || ticket.id_ticket,
-        tipo: getTipoNotificacion(estadoNuevo),
-        canal: "email",
-        destinatario: ticket.email_cliente,
-        datos: {
-          nombre: ticket.nombre_cliente,
-          ticket: ticket.codigo_ticket || ticket.id_ticket,
-          codigo_ticket: ticket.codigo_ticket,
-          estado: estadoNuevo,
-          fecha,
-          producto,
-          numero_serie: ticket.numero_serie,
-          ...datosExtra,
+  for (const canal of canales) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), NOTIFICATION_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${NOTIFICATION_SERVICE_URL}/notifications/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(NOTIFICATION_INTERNAL_TOKEN
+            ? { "X-Internal-Token": NOTIFICATION_INTERNAL_TOKEN }
+            : {}),
         },
-      }),
-    });
+        signal: controller.signal,
+        body: JSON.stringify({
+          id_ticket: ticket.codigo_ticket || ticket.id_ticket,
+          tipo: getTipoNotificacion(estadoNuevo),
+          canal,
+          destinatario: destinos[canal],
+          datos: {
+            nombre: ticket.nombre_cliente,
+            ticket: ticket.codigo_ticket || ticket.id_ticket,
+            codigo_ticket: ticket.codigo_ticket,
+            estado: estadoNuevo,
+            fecha,
+            producto,
+            numero_serie: ticket.numero_serie,
+            ...datosExtra,
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`notification-service respondio ${response.status}: ${body}`);
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`notification-service respondio ${response.status}: ${body}`);
+      }
+
+      resultados.push({
+        canal,
+        success: true,
+        respuesta: await response.json().catch(() => ({})),
+      });
+    } catch (error) {
+      resultados.push({ canal, success: false, error: error.message });
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return response.json().catch(() => ({
-      success: true,
-      message: "Notificacion aceptada por notification-service.",
-    }));
-  } finally {
-    clearTimeout(timeout);
   }
+
+  const exitosos = resultados.filter((resultado) => resultado.success);
+  if (!exitosos.length) {
+    throw new Error(resultados.map((resultado) => `${resultado.canal}: ${resultado.error}`).join("; "));
+  }
+
+  return {
+    success: true,
+    message: `Notificacion enviada por ${exitosos.map((resultado) => resultado.canal).join(", ")}.`,
+    result: resultados,
+  };
 };
 
 // GET /tickets/:id - FEAT01: Consulta pública de ticket por ID
@@ -1665,6 +1694,7 @@ const registrarEntregaTicket = async (req, res) => {
         t.estado,
         c.nombre AS nombre_cliente,
         c.email AS email_cliente,
+        c.telefono AS telefono_cliente,
         p.nombre AS producto,
         p.marca,
         p.modelo,
