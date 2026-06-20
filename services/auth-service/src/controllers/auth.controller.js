@@ -34,6 +34,24 @@ async function obtenerRolPorNombre(nombre) {
   return result.rows[0] || null;
 }
 
+async function esUltimoAdministradorActivo(idUsuario) {
+  const result = await pool.query(
+    `SELECT
+      EXISTS (
+        SELECT 1 FROM usuarios u
+        JOIN roles r ON r.id_rol = u.id_rol
+        WHERE u.id_usuario = $1 AND u.activo = TRUE AND r.nombre = 'Administrador'
+      ) AS objetivo_es_admin,
+      (
+        SELECT COUNT(*)::int FROM usuarios u
+        JOIN roles r ON r.id_rol = u.id_rol
+        WHERE u.activo = TRUE AND r.nombre = 'Administrador'
+      ) AS administradores_activos`,
+    [idUsuario]
+  );
+  return result.rows[0].objetivo_es_admin && result.rows[0].administradores_activos <= 1;
+}
+
 const SALT_ROUNDS = 12; // según DAS sección 9.1
 
 // ── LOGIN ──────────────────────────────────────────────────────────
@@ -206,7 +224,6 @@ exports.crearUsuario = async (req, res) => {
     if (!rolDb) {
       return res.status(400).json({ error: 'Rol no valido.' });
     }
-
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const result = await pool.query(
       `INSERT INTO usuarios (nombre_completo, username, password_hash, id_rol)
@@ -246,6 +263,12 @@ exports.cambiarRolUsuario = async (req, res) => {
     if (!rolDb) {
       return res.status(400).json({ error: 'Rol no valido.' });
     }
+    if (String(admin.id_usuario) === String(id) && rolDb.nombre !== 'Administrador') {
+      return res.status(409).json({ error: 'No puede retirar su propio rol de Administrador.' });
+    }
+    if (rolDb.nombre !== 'Administrador' && await esUltimoAdministradorActivo(id)) {
+      return res.status(409).json({ error: 'Debe existir al menos un Administrador activo.' });
+    }
 
     const result = await pool.query(
       `UPDATE usuarios
@@ -282,6 +305,12 @@ exports.cambiarEstadoUsuario = async (req, res) => {
   try {
     const admin = await exigirAdministrador(req, res);
     if (!admin) return;
+    if (String(admin.id_usuario) === String(id) && activo === false) {
+      return res.status(409).json({ error: 'No puede desactivar su propia cuenta.' });
+    }
+    if (activo === false && await esUltimoAdministradorActivo(id)) {
+      return res.status(409).json({ error: 'Debe existir al menos un Administrador activo.' });
+    }
 
     const result = await pool.query(
       `UPDATE usuarios

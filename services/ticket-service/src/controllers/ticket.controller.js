@@ -24,7 +24,7 @@ const NOTIFICATION_SERVICE_URL =
   process.env.NOTIFICATION_SERVICE_URL || "http://notification-service:3004";
 const NOTIFICATION_TIMEOUT_MS = Number(process.env.NOTIFICATION_TIMEOUT_MS || 3000);
 const NOTIFICATION_INTERNAL_TOKEN = process.env.NOTIFICATION_INTERNAL_TOKEN || "";
-const ROLES_REPUESTOS = ["Tecnico", "Agente"];
+const ROLES_REPUESTOS = ["Tecnico", "Agente", "Administrador"];
 const REPUESTOS_COMPATIBLES = {
   laptop: ["REP-006", "REP-007", "REP-008"],
   smartphone: ["REP-001", "REP-009", "REP-010"],
@@ -717,7 +717,7 @@ const asignarRepuestosTicket = async (req, res) => {
     ) {
       return res.status(403).json({
         success: false,
-        message: "Solo Tecnico y Agente pueden asignar repuestos.",
+        message: "Solo Tecnico, Agente o Administrador pueden asignar repuestos.",
       });
     }
 

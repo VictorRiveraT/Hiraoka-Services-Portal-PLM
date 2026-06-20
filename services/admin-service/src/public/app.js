@@ -41,6 +41,7 @@ const emptyHistorial   = document.getElementById('empty-historial');
 
 // ── ESTADO ─────────────────────────────────────────────────────────────────────
 let token = sessionStorage.getItem('admin_token') || '';
+let currentRole = '';
 let allUsers = [];
 let usersPage = 1;
 const PAGE_SIZE = 10;
@@ -54,6 +55,12 @@ const ROLE_VALUES = Object.fromEntries(Object.entries(ROLE_LABELS).map(([value, 
 let adminPreferences = JSON.parse(localStorage.getItem('admin_preferences') || '{}');
 let dashboardTimer = null;
 let lastDashboardData = null;
+let editingUserId = null;
+
+const userDialog = document.getElementById('user-dialog');
+const userDialogForm = document.getElementById('user-dialog-form');
+const userIdentityFields = document.getElementById('user-identity-fields');
+const userDialogMessage = document.getElementById('user-dialog-message');
 
 // Estado de Notificaciones Inteligentes
 let currentNotifications = [];
@@ -82,10 +89,50 @@ function fmtFecha(value) {
   return new Date(value).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function applyRoleAccess() {
+  const isAdmin = currentRole === 'Administrador';
+  navUsuarios.hidden = !isAdmin;
+  navConfig.hidden = !isAdmin;
+  navHistorial.hidden = !['Administrador', 'Gerente'].includes(currentRole);
+}
+
+function closeUserDialog() {
+  userDialog.close();
+  userDialogMessage.hidden = true;
+  userDialogForm.reset();
+  editingUserId = null;
+}
+
+function openCreateUserDialog() {
+  editingUserId = null;
+  userDialogForm.reset();
+  userIdentityFields.hidden = false;
+  userIdentityFields.querySelectorAll('input').forEach((input) => { input.required = true; });
+  document.getElementById('user-dialog-title').textContent = 'Crear nuevo usuario';
+  document.getElementById('user-dialog-copy').textContent = 'Configure la cuenta y el nivel de acceso del colaborador.';
+  document.getElementById('user-dialog-submit').textContent = 'Crear usuario';
+  userDialogMessage.hidden = true;
+  userDialog.showModal();
+  document.getElementById('user-full-name').focus();
+}
+
+function openEditRoleDialog(user) {
+  editingUserId = user.id;
+  userIdentityFields.hidden = true;
+  userIdentityFields.querySelectorAll('input').forEach((input) => { input.required = false; });
+  document.getElementById('user-dialog-title').textContent = 'Editar rol';
+  document.getElementById('user-dialog-copy').textContent = `${user.nombre} · ${user.correo}`;
+  document.getElementById('user-role').value = ROLE_VALUES[user.rol] || user.rol;
+  document.getElementById('user-dialog-submit').textContent = 'Guardar rol';
+  userDialogMessage.hidden = true;
+  userDialog.showModal();
+  document.getElementById('user-role').focus();
+}
+
 // ── NAVEGACION ──────────────────────────────────────────────────────────────────
 function setActiveNav(btn) {
   [navDashboard, navUsuarios, navHistorial, navConfig].filter(Boolean).forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
 function hideAllViews() {
@@ -114,6 +161,7 @@ function showDashboard() {
 }
 
 function showUsuarios() {
+  if (currentRole !== 'Administrador') return showDashboard();
   hideAllViews();
   viewUsuarios.hidden = false;
   setActiveNav(navUsuarios);
@@ -496,25 +544,14 @@ async function handleUserAction(id, action) {
   if (action === 'editar') {
     const user = allUsers.find(u => u.id === id);
     if (!user) return;
-    const nuevoRol = prompt(`Rol actual: "${user.rol}"\nIngrese el nuevo rol:`, user.rol);
-    if (!nuevoRol || nuevoRol.trim() === user.rol) return;
-    try {
-      await apiJson(`/api/usuarios/${id}/rol`, {
-        method: 'PUT', headers: authHeaders(),
-        body: JSON.stringify({ rol: ROLE_VALUES[nuevoRol.trim()] || nuevoRol.trim() }),
-      });
-      user.rol = ROLE_LABELS[ROLE_VALUES[nuevoRol.trim()] || nuevoRol.trim()] || nuevoRol.trim();
-    } catch (error) {
-      alert(error.message);
-      return;
-    }
-    renderUsuarios();
+    openEditRoleDialog(user);
     return;
   }
 
   const nuevoEstado = action === 'activar' ? 'Activo' : 'Inactivo';
   const user = allUsers.find(u => u.id === id);
   if (!user) return;
+  if (!window.confirm(`${nuevoEstado === 'Activo' ? 'Activar' : 'Desactivar'} la cuenta de ${user.nombre}?`)) return;
   try {
     await apiJson(`/api/usuarios/${id}/estado`, {
       method: 'PUT', headers: authHeaders(),
@@ -631,10 +668,14 @@ loginForm.addEventListener('submit', async e => {
     });
     token = data.token;
     const payload = JSON.parse(atob(token.split('.')[1]));
-    if (payload.rol !== 'Administrador') throw new Error('Este portal es exclusivo para Administradores.');
+    if (!['Administrador', 'Gerente'].includes(payload.rol)) {
+      throw new Error('Este portal es exclusivo para Administradores y Gerentes.');
+    }
+    currentRole = payload.rol;
     sessionStorage.setItem('admin_token', token);
-    roleLabel.textContent = `Rol: ${payload.rol || 'Administrador'}`;
+    roleLabel.textContent = `Rol: ${currentRole}`;
     showApp();
+    applyRoleAccess();
     showDashboard();
   } catch (err) {
     loginError.textContent = err.message;
@@ -650,6 +691,7 @@ navConfig.addEventListener('click', showConfig);
 
 document.getElementById('logout-btn').addEventListener('click', () => {
   token = '';
+  currentRole = '';
   sessionStorage.removeItem('admin_token');
   allUsers = [];
   showLogin();
@@ -662,25 +704,37 @@ filterEstado.addEventListener('change',() => { usersPage = 1; renderUsuarios(); 
 pagePrev.addEventListener('click', () => { usersPage--; renderUsuarios(); });
 pageNext.addEventListener('click', () => { usersPage++; renderUsuarios(); });
 
-document.getElementById('btn-crear-usuario').addEventListener('click', async () => {
-  const nombre_completo = prompt('Nombre completo del nuevo usuario:');
-  if (!nombre_completo) return;
-  const username = prompt('Nombre de usuario:');
-  if (!username) return;
-  const password = prompt('Contraseña temporal (mínimo 8 caracteres):');
-  if (!password) return;
-  const rol = prompt('Rol: Técnico Taller, Agente Call Center, Gerente o Administrador:', 'Técnico Taller');
-  if (!rol) return;
-
+document.getElementById('btn-crear-usuario').addEventListener('click', openCreateUserDialog);
+document.getElementById('user-dialog-close').addEventListener('click', closeUserDialog);
+document.getElementById('user-dialog-cancel').addEventListener('click', closeUserDialog);
+userDialogForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  userDialogMessage.hidden = true;
+  const rol = document.getElementById('user-role').value;
   try {
-    await apiJson('/api/usuarios', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ nombre_completo, username, password, rol: ROLE_VALUES[rol] || rol }),
-    });
+    if (editingUserId) {
+      await apiJson(`/api/usuarios/${editingUserId}/rol`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ rol }),
+      });
+    } else {
+      await apiJson('/api/usuarios', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          nombre_completo: document.getElementById('user-full-name').value.trim(),
+          username: document.getElementById('user-username').value.trim(),
+          password: document.getElementById('user-password').value,
+          rol,
+        }),
+      });
+    }
+    closeUserDialog();
     await loadUsuarios();
   } catch (error) {
-    alert(error.message);
+    userDialogMessage.textContent = error.message;
+    userDialogMessage.hidden = false;
   }
 });
 
@@ -707,9 +761,11 @@ document.getElementById('admin-config-form').addEventListener('submit', (event) 
 if (token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    if (payload.rol !== 'Administrador') throw new Error('Rol inválido');
-    roleLabel.textContent = `Rol: ${payload.rol || 'Administrador'}`;
+    if (!['Administrador', 'Gerente'].includes(payload.rol)) throw new Error('Rol inválido');
+    currentRole = payload.rol;
+    roleLabel.textContent = `Rol: ${currentRole}`;
     showApp();
+    applyRoleAccess();
     showDashboard();
   } catch (_) {
     sessionStorage.removeItem('admin_token');
@@ -728,6 +784,7 @@ function applyAdminPreferences() {
 }
 
 function showConfig() {
+  if (currentRole !== 'Administrador') return showDashboard();
   hideAllViews();
   viewConfig.hidden = false;
   setActiveNav(navConfig);

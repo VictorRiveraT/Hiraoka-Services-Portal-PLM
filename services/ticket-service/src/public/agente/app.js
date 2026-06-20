@@ -15,10 +15,18 @@ const resultEvidence = document.getElementById('result-evidence');
 const deliverySummary = document.getElementById('delivery-summary');
 const deliveryPayment = document.getElementById('delivery-payment');
 const deliveryMessage = document.getElementById('delivery-message');
+const fotosIngresoInput = document.getElementById('fotos_ingreso');
+const evidencePreview = document.getElementById('evidence-preview');
+const cameraDialog = document.getElementById('camera-dialog');
+const cameraVideo = document.getElementById('camera-video');
+const cameraCanvas = document.getElementById('camera-canvas');
+const cameraError = document.getElementById('camera-error');
 
 // Ã¢â€â‚¬Ã¢â€â‚¬ ESTADO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 let token = sessionStorage.getItem('agente_token') || '';
 let deliveryTicket = null;
+let cameraStream = null;
+let evidenceFiles = [];
 
 // Ã¢â€â‚¬Ã¢â€â‚¬ HELPERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 async function apiJson(url, options = {}) {
@@ -30,6 +38,72 @@ async function apiJson(url, options = {}) {
 
 function authHeaders() {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+function syncEvidenceInput() {
+  if (typeof DataTransfer === 'undefined') return;
+  const transfer = new DataTransfer();
+  evidenceFiles.slice(0, 5).forEach((file) => transfer.items.add(file));
+  fotosIngresoInput.files = transfer.files;
+}
+
+function renderEvidencePreview() {
+  evidencePreview.innerHTML = '';
+  evidencePreview.hidden = evidenceFiles.length === 0;
+  evidenceFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'evidence-preview-item';
+    const image = document.createElement('img');
+    image.src = URL.createObjectURL(file);
+    image.alt = `Evidencia de ingreso ${index + 1}`;
+    image.addEventListener('load', () => URL.revokeObjectURL(image.src), { once: true });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', `Eliminar evidencia ${index + 1}`);
+    remove.textContent = '×';
+    remove.addEventListener('click', () => {
+      evidenceFiles.splice(index, 1);
+      syncEvidenceInput();
+      renderEvidencePreview();
+    });
+    item.append(image, remove);
+    evidencePreview.appendChild(item);
+  });
+}
+
+function addEvidenceFiles(files) {
+  const accepted = Array.from(files || []).filter((file) => file.type.startsWith('image/'));
+  evidenceFiles = [...evidenceFiles, ...accepted].slice(0, 5);
+  syncEvidenceInput();
+  renderEvidencePreview();
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+  cameraVideo.srcObject = null;
+}
+
+async function openCamera() {
+  cameraError.hidden = true;
+  cameraDialog.showModal();
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraError.textContent = 'Este navegador no permite captura directa. Use el selector de archivos para abrir la cámara del dispositivo.';
+    cameraError.hidden = false;
+    return;
+  }
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false,
+    });
+    cameraVideo.srcObject = cameraStream;
+  } catch {
+    cameraError.textContent = 'No se pudo acceder a la cámara. Revise el permiso del navegador o seleccione una imagen.';
+    cameraError.hidden = false;
+  }
 }
 
 function fmtFecha(value) {
@@ -298,7 +372,7 @@ registroForm.addEventListener('submit', async e => {
     });
 
     const ticket = data.data;
-    const fotosIngreso = Array.from(document.getElementById('fotos_ingreso').files || []).slice(0, 5);
+    const fotosIngreso = evidenceFiles.slice(0, 5);
     resultEvidence.textContent = '';
     if (fotosIngreso.length) {
       try {
@@ -336,6 +410,8 @@ registroForm.addEventListener('submit', async e => {
 // Ã¢â€â‚¬Ã¢â€â‚¬ REGISTRAR OTRO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 document.getElementById('btn-nuevo').addEventListener('click', () => {
   registroForm.reset();
+  evidenceFiles = [];
+  renderEvidencePreview();
   dniHint.textContent = '';
   clearFormError();
   formSection.hidden   = false;
@@ -346,6 +422,31 @@ document.getElementById('btn-nuevo').addEventListener('click', () => {
 document.getElementById('btn-imprimir').addEventListener('click', () => {
   window.print();
 });
+
+fotosIngresoInput.addEventListener('change', () => {
+  evidenceFiles = [];
+  addEvidenceFiles(fotosIngresoInput.files);
+});
+document.getElementById('btn-abrir-camara').addEventListener('click', openCamera);
+document.getElementById('btn-capturar-foto').addEventListener('click', () => {
+  if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) {
+    cameraError.textContent = 'La cámara todavía no está lista.';
+    cameraError.hidden = false;
+    return;
+  }
+  cameraCanvas.width = cameraVideo.videoWidth;
+  cameraCanvas.height = cameraVideo.videoHeight;
+  cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+  cameraCanvas.toBlob((blob) => {
+    if (!blob) return;
+    addEvidenceFiles([
+      new File([blob], `evidencia-${Date.now()}.jpg`, { type: 'image/jpeg' }),
+    ]);
+    stopCamera();
+    cameraDialog.close();
+  }, 'image/jpeg', 0.9);
+});
+cameraDialog.addEventListener('close', stopCamera);
 
 
 document.getElementById('btn-buscar-entrega').addEventListener('click', async () => {

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hiraoka Services | Encuesta de satisfacción</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/encuesta/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"><strong>Hiraoka</strong><span>Services</span></a>
+    </header>
+    <main class="survey-shell">
+      <section class="survey-card">
+        <p class="eyebrow">Servicio técnico post-venta</p>
+        <h1>Cuéntenos cómo fue su experiencia</h1>
+        <p class="intro">Su respuesta toma menos de un minuto y nos ayuda a mejorar la atención.</p>
+
+        <form id="nps-page-form">
+          <div class="identity-grid">
+            <label>Código de ticket
+              <input id="nps-ticket" autocomplete="off" placeholder="TK-2026-005" required>
+            </label>
+            <label>DNI del titular
+              <input id="nps-dni" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="12345678" required>
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>¿Qué tan probable es que recomiende Hiraoka Services?</legend>
+            <div class="score-grid" id="nps-page-scale" aria-label="Puntuación del 1 al 10"></div>
+            <div class="scale-labels"><span>Nada probable</span><span>Muy probable</span></div>
+          </fieldset>
+
+          <label>Comentario (opcional)
+            <textarea id="nps-page-comment" maxlength="1000" rows="5" placeholder="¿Qué hicimos bien o qué podríamos mejorar?"></textarea>
+          </label>
+
+          <p class="form-message" id="nps-page-message" hidden></p>
+          <button class="submit-button" id="nps-page-submit" type="submit">Enviar encuesta</button>
+        </form>
+
+        <div class="success-panel" id="nps-page-success" hidden>
+          <div class="success-icon">✓</div>
+          <h2>Gracias por ayudarnos a mejorar</h2>
+          <p>Su respuesta fue registrada correctamente.</p>
+          <a href="/">Volver al portal de seguimiento</a>
+        </div>
+      </section>
+    </main>
+    <script src="/encuesta/app.js" defer></script>
+  </body>
+</html>

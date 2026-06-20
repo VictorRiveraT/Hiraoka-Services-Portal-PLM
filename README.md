@@ -25,19 +25,19 @@ Desarrollado como proyecto universitario en la Universidad Peruana Cayetano Here
 |------|--------------|--------|
 | FEAT01 | Consulta de estado del ticket (portal del cliente) | Listo |
 | FEAT02 | Visualización del detalle técnico del equipo | Listo |
-| FEAT03 | Notificaciones automáticas por email (SendGrid) | En progreso |
-| FEAT04 | Notificaciones automáticas por WhatsApp/SMS (Twilio) | Implementado; requiere credenciales |
-| FEAT05 | Registro de entrada y diagnóstico inicial | Pendiente |
-| FEAT06 | Actualización de estado por técnico (PWA offline) | Implementado |
-| FEAT07 | Historial de vida del producto por número de serie | Pendiente |
-| FEAT08 | Control de acceso granular por roles (RBAC) | En progreso |
+| FEAT03 | Notificaciones automáticas por email (SendGrid) | Listo y validado en producción |
+| FEAT04 | Notificaciones automáticas por WhatsApp/SMS (Twilio) | Código listo; validación productiva pendiente por credenciales de pago |
+| FEAT05 | Registro de entrada y diagnóstico inicial | Listo |
+| FEAT06 | Actualización de estado por técnico (PWA offline) | Listo |
+| FEAT07 | Historial de vida del producto por número de serie | Listo |
+| FEAT08 | Control de acceso granular por roles (RBAC) | Listo |
 | FEAT09 | Autenticación JWT con log de auditoría inalterable | Listo |
 | FEAT10 | Consulta de disponibilidad de repuestos (inventario) | Listo |
 | FEAT11 | Gestión de asignación de repuestos al ticket | Listo |
 | FEAT12 | Verificación de cobertura de garantía | Listo |
 | FEAT13 | Gestión de flujo de estados del ticket | Listo |
-| FEAT14 | Dashboard gerencial con métricas KPI | Pendiente |
-| FEAT15 | Encuesta de satisfacción NPS post-servicio | Pendiente |
+| FEAT14 | Dashboard gerencial con métricas KPI | Listo |
+| FEAT15 | Encuesta de satisfacción NPS post-servicio | Listo |
 
 ---
 
@@ -214,22 +214,32 @@ Hiraoka-Services-Portal-PLM/
 | Método | Endpoint | Descripción | Auth |
 |--------|----------|-------------|------|
 | POST | `/api/auth/login` | Iniciar sesión | No |
-| POST | `/api/auth/register` | Registrar usuario | No |
 | GET | `/api/auth/verify` | Verificar token | Si |
+| POST | `/api/auth/logout` | Cerrar sesión y auditar salida | Si |
+| GET | `/api/usuarios` | Listar usuarios | Administrador |
+| POST | `/api/usuarios` | Crear usuario | Administrador |
+| PUT | `/api/usuarios/:id/rol` | Cambiar rol | Administrador |
+| PUT | `/api/usuarios/:id/estado` | Activar/desactivar cuenta | Administrador |
 
 ### Ticket Service (`/api/tickets`)
 
 | Método | Endpoint | Descripción | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/tickets/:id` | Consultar ticket por ID | No |
-| GET | `/api/tickets/dni/:dni` | Consultar tickets por DNI | No |
+| GET | `/api/tickets/:id` | Consultar ticket por ID | Si |
+| GET | `/api/tickets/dni/:dni` | Consultar tickets por DNI | Si |
 | POST | `/api/tickets/consulta` | Consulta segura DNI + ticket | No |
+| POST | `/api/tickets` | Registrar equipo y orden de servicio | Agente/Admin |
 | GET | `/api/tickets/tecnico/mis-tickets` | Tickets asignados al técnico | Si |
+| GET | `/api/tickets/historial/:numero_serie` | Historial de vida del producto | Si, por rol |
 | PUT | `/api/tickets/:id/estado` | Actualizar estado del ticket | Si |
 | POST | `/api/tickets/:id/asignar` | Asignar técnico al ticket | Si |
+| POST | `/api/tickets/:id/evidencias` | Subir evidencias fotográficas | Si, por rol |
+| POST | `/api/tickets/:id/entrega` | Registrar pago y entrega | Agente/Admin |
+| POST | `/api/tickets/:id/nps` | Registrar encuesta NPS con validación DNI | No |
 | GET | `/api/tickets/:id/repuestos` | Consultar repuestos compatibles/asignados y disponibilidad | No |
 | POST | `/api/tickets/:id/repuestos` | Asignar repuestos al ticket y descontar stock legacy | Si (Tecnico/Agente) |
 | GET | `/api/tickets/:id/garantia` | Verificar cobertura de garantía del producto | No |
+| GET | `/api/dashboard/metricas` | KPI gerenciales | Gerente/Admin |
 
 ### Notification Service (`/api/notifications`)
 
@@ -292,11 +302,8 @@ develop         # Integración de features
 feature/*       # Desarrollo de funcionalidades por FEAT
 ```
 
-Ramas activas:
-
-- `feature/FEAT03-notificaciones`
-- `feature/FEAT06-panel-tecnico`
-- `feature/FEAT10-integracion-api`
+Los FEAT01–FEAT15 están integrados en `main`; FEAT04 solo requiere habilitación
+comercial de Twilio para su validación productiva.
 
 ---
 
@@ -318,7 +325,7 @@ Ramas activas:
 - Metodología: Scrum (sprints de 1 semana)
 - Docente: Prof. Juan Manuel Hapalla García
 - Universidad: Universidad Peruana Cayetano Heredia — 2026-I
-- Dominio: hiraokaservices.lat (próximamente)
+- Dominio de producción: hiraokaservices.lat
 
 ---
 

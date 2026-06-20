@@ -177,8 +177,6 @@ select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(204,0,0,.08);}
 .data-table td:first-child{width:150px;max-width:150px;overflow:hidden;text-overflow:ellipsis;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}
 .text-right{text-align:right;}
 
-#nav-historial{display:none;}
-
 .role-badge,.status-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:4px;font-size:13px;font-weight:500;}
 .role-tecnico{background:var(--orange-bg);color:var(--orange);}
 .role-agente{background:var(--green-light-bg);color:var(--green);}
@@ -225,6 +223,25 @@ select:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(204,0,0,.08);}
 .warranty-chip-green svg{width:16px;height:16px;}
 
 .empty-historial{padding:40px;border:1px dashed var(--border);border-radius:8px;background:var(--white);color:var(--muted);text-align:center;}
+
+.user-dialog {
+  width: min(560px, calc(100% - 24px));
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 24px 70px rgba(17,24,39,.28);
+}
+.user-dialog::backdrop { background: rgba(17,24,39,.66); }
+.user-dialog-form { display: grid; gap: 18px; padding: 24px; }
+.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.dialog-heading h2 { margin: 0 0 5px; }
+.dialog-heading p { margin: 0; color: var(--muted); }
+.dialog-close { width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--page); font-size: 26px; }
+.dialog-fields { display: grid; gap: 14px; }
+.user-dialog-form label { display: grid; gap: 7px; color: #374151; font-size: 13px; font-weight: 700; }
+.user-dialog-form input { min-height: 44px; padding: 0 12px; border: 1px solid #D1D5DB; border-radius: 4px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.dialog-message { margin: 0; color: var(--red); font-weight: 700; }
 
 /* ── TIMELINE ── */
 .timeline{position:relative;padding-left:56px;}

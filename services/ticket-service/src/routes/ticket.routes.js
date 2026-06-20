@@ -55,13 +55,23 @@ router.get("/dni/:dni", verifyToken, validateDni, getTicketsByDni);
 router.get("/tecnico/mis-tickets", verifyToken, getTicketsAsignadosTecnico);
 
 // GET /tickets/historial/:numero_serie — FEAT07: historial del equipo
-router.get("/historial/:numero_serie", verifyToken, getHistorialProducto);
+router.get(
+  "/historial/:numero_serie",
+  verifyToken,
+  authorizeRoles("Tecnico", "Agente", "Gerente", "Administrador"),
+  getHistorialProducto
+);
 
 // GET /dashboard/metricas — FEAT14: KPIs del periodo solicitado
-router.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
+router.get(
+  "/dashboard/metricas",
+  verifyToken,
+  authorizeRoles("Gerente", "Administrador"),
+  getMetricasDashboard
+);
 
 // POST /tickets - FEAT05: Registro de entrada de equipo
-router.post('/', verifyToken, crearTicket);
+router.post('/', verifyToken, authorizeRoles("Agente", "Administrador"), crearTicket);
 
 // POST /tickets/:id/nps - FEAT15: registra una unica encuesta NPS
 router.post("/:id/nps", responderNps);
@@ -87,7 +97,13 @@ router.get("/:id/garantia", consultarGarantiaTicket);
 // GET /tickets/:id — Consulta un ticket por su UUID
 router.get("/:id", verifyToken, getTicketById);
 
-router.post("/:id/evidencias", verifyToken, authorizeRoles("Tecnico"), upload.array("fotos", 5), subirEvidencias);
+router.post(
+  "/:id/evidencias",
+  verifyToken,
+  authorizeRoles("Tecnico", "Agente", "Administrador"),
+  upload.array("fotos", 5),
+  subirEvidencias
+);
 
 module.exports = router;
 

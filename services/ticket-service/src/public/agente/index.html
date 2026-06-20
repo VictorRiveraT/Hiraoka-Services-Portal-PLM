@@ -127,8 +127,12 @@
                 </label>
                 <label class="field span-2">
                   <span>Fotos de ingreso / evidencia inicial</span>
-                  <input id="fotos_ingreso" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
-                  <small class="field-hint">Hasta 5 imágenes. Se mostrarán al cliente en “Equipo recibido”.</small>
+                  <div class="evidence-actions">
+                    <input id="fotos_ingreso" type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" multiple>
+                    <button class="btn-secondary camera-button" id="btn-abrir-camara" type="button">Abrir cámara</button>
+                  </div>
+                  <div class="evidence-preview" id="evidence-preview" hidden></div>
+                  <small class="field-hint">Capture o seleccione hasta 5 imágenes. Se mostrarán al cliente en “Equipo recibido”.</small>
                 </label>
                 <label class="field">
                   <span>Monto estimado inicial</span>
@@ -248,6 +252,25 @@
 
       </div>
     </section>
+
+    <dialog class="camera-dialog" id="camera-dialog">
+      <form method="dialog" class="camera-panel">
+        <div class="camera-heading">
+          <div>
+            <h2>Capturar evidencia de ingreso</h2>
+            <p>Encuadre el equipo y capture una foto nítida de su estado físico.</p>
+          </div>
+          <button class="camera-close" value="cancel" type="submit" aria-label="Cerrar cámara">×</button>
+        </div>
+        <video id="camera-video" autoplay playsinline muted></video>
+        <canvas id="camera-canvas" hidden></canvas>
+        <p class="form-error" id="camera-error" hidden></p>
+        <div class="camera-actions">
+          <button class="btn-secondary" value="cancel" type="submit">Cancelar</button>
+          <button class="btn-primary" id="btn-capturar-foto" type="button">Capturar foto</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="/agente/app.js" defer></script>
   </body>

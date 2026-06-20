@@ -37,7 +37,7 @@ const buildText = (tipo, datos) => {
   }
 
   if (tipo === 'entregado') {
-    return `Hola ${datos.nombre}, tu equipo ${datos.producto || ''} fue entregado. Ticket ${datos.ticket}. Gracias por confiar en Hiraoka Services.`;
+    return `Hola ${datos.nombre}, tu equipo ${datos.producto || ''} fue entregado. Ticket ${datos.ticket}. Complete la encuesta de satisfaccion: ${datos.nps_url}`;
   }
 
   return `Hola ${datos.nombre}, el ticket ${datos.ticket} cambio a estado ${datos.estado}. Fecha estimada: ${datos.fecha}.`;

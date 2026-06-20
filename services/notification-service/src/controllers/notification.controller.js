@@ -67,14 +67,17 @@ const sendNotification = async (req, res) => {
   }
 
   try {
+    const portalUrl = String(datos.portal_url || process.env.PORTAL_URL || 'http://localhost').replace(/\/+$/, '');
+    const ticket = datos.ticket || datos.codigo_ticket || id_ticket;
     const variables = {
       ...datos,
       id_ticket,
-      ticket: datos.ticket || datos.codigo_ticket || id_ticket,
+      ticket,
       nombre: datos.nombre || datos.nombre_cliente || 'Cliente',
       estado: datos.estado || datos.estado_nuevo || 'Actualizado',
       fecha: datos.fecha || datos.fecha_estimada || datos.fecha_estimada_entrega || 'Por confirmar',
-      portal_url: datos.portal_url || process.env.PORTAL_URL || 'http://localhost',
+      portal_url: portalUrl,
+      nps_url: `${portalUrl}/encuesta/?ticket=${encodeURIComponent(ticket)}`,
     };
 
     const provider = canal === 'email' ? emailProvider : twilioProvider;

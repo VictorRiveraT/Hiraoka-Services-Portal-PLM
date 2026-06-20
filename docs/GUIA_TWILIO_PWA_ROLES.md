@@ -39,9 +39,14 @@ La cola offline no almacena el JWT; usa la sesión activa al sincronizar.
 
 Las rutas sensibles aplican autenticación y autorización antes del controlador:
 
-- Actualizar estado y subir evidencias: `Tecnico`.
+- Actualizar estado: `Tecnico` asignado al ticket.
+- Subir evidencias técnicas: `Tecnico` asignado; la evidencia inicial de
+  recepción también puede subirla `Agente` o `Administrador`.
 - Asignar técnico y registrar entrega: `Agente` o `Administrador`.
 - Asignar repuestos: `Tecnico`, `Agente` o `Administrador`.
+- Consultar historial: cualquier rol interno autenticado.
+- Consultar dashboard KPI: `Gerente` o `Administrador`.
+- Gestionar usuarios: únicamente `Administrador`.
 
 Los controladores conservan sus validaciones contra base de datos como segunda
 capa, incluyendo usuario activo, técnico asignado y reglas del estado.

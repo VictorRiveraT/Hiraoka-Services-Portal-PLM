@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const ticketRoutes = require("./routes/ticket.routes");
 const verifyToken = require("./middleware/verifyToken");
+const authorizeRoles = require("./middleware/authorizeRoles");
 const { getMetricasDashboard } = require("./controllers/ticket.controller");
 
 const path = require('path');
@@ -20,7 +21,7 @@ const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
   "X-Frame-Options": "DENY",
-  "Permissions-Policy": "camera=(), geolocation=(), microphone=()",
+  "Permissions-Policy": "camera=(self), geolocation=(), microphone=()",
 };
 
 const parseAllowedOrigins = () =>
@@ -62,7 +63,12 @@ app.get("/health", (req, res) => {
 });
 
 // Rutas
-app.get("/dashboard/metricas", verifyToken, getMetricasDashboard);
+app.get(
+  "/dashboard/metricas",
+  verifyToken,
+  authorizeRoles("Gerente", "Administrador"),
+  getMetricasDashboard
+);
 app.use("/tickets", ticketRoutes);
 
 app.use('/uploads', express.static('/app/uploads'));
