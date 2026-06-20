@@ -448,31 +448,35 @@ input {
   white-space: nowrap;
 }
 
-.state-Recibido {
+/* Estos colores de estado son para el badge de la cabecera y la leyenda de la guia.
+   Se excluye explicitamente .tl-step porque ese elemento (cada fila del timeline)
+   comparte el mismo nombre de clase "state-X" pero NO debe pintar su fondo completo;
+   el color solo debe aparecer dentro del recuadro redondeado (.tl-body) cuando esta activo. */
+.state-Recibido:not(.tl-step) {
   color: var(--rec-text);
   background: var(--rec-bg);
   border-color: var(--rec-border);
 }
 
-.state-Diagnosticando {
+.state-Diagnosticando:not(.tl-step) {
   color: var(--diag-text);
   background: var(--diag-bg);
   border-color: var(--diag-border);
 }
 
-.state-Reparando {
+.state-Reparando:not(.tl-step) {
   color: var(--rep-text);
   background: var(--rep-bg);
   border-color: var(--rep-border);
 }
 
-.state-Listo {
+.state-Listo:not(.tl-step) {
   color: var(--ready-text);
   background: var(--ready-bg);
   border-color: var(--ready-border);
 }
 
-.state-Entregado {
+.state-Entregado:not(.tl-step) {
   color: var(--done-text);
   background: var(--done-bg);
   border-color: var(--done-border);
@@ -713,35 +717,35 @@ input {
 
 .tl-step.active .tl-body {
   padding: 22px;
-  border: 2px solid #B8CCE4;
+  border: 2px solid var(--rec-border);
   border-radius: var(--radius-card);
-  background: #F3F8FE;
+  background: var(--rec-bg);
 }
 
 .tl-step.active .tl-title {
-  color: #174A7E;
+  color: var(--rec-text);
 }
 
 .tl-step.state-Diagnosticando.active .tl-body {
-  border-color: #F0C36A;
-  background: #FFF8E8;
+  border-color: var(--diag-border);
+  background: var(--diag-bg);
 }
-.tl-step.state-Diagnosticando.active .tl-title { color: #8A5A00; }
+.tl-step.state-Diagnosticando.active .tl-title { color: var(--diag-text); }
 .tl-step.state-Reparando.active .tl-body {
-  border-color: #F2A766;
-  background: #FFF4EA;
+  border-color: var(--rep-border);
+  background: var(--rep-bg);
 }
-.tl-step.state-Reparando.active .tl-title { color: #A64B00; }
+.tl-step.state-Reparando.active .tl-title { color: var(--rep-text); }
 .tl-step.state-Listo.active .tl-body {
-  border-color: #8BC49A;
-  background: #EFF9F1;
+  border-color: var(--ready-border);
+  background: var(--ready-bg);
 }
-.tl-step.state-Listo.active .tl-title { color: #216E39; }
+.tl-step.state-Listo.active .tl-title { color: var(--ready-text); }
 .tl-step.state-Entregado.active .tl-body {
-  border-color: #9AA6B2;
-  background: #F5F7F9;
+  border-color: var(--done-border);
+  background: var(--done-bg);
 }
-.tl-step.state-Entregado.active .tl-title { color: #374151; }
+.tl-step.state-Entregado.active .tl-title { color: var(--done-text); }
 
 .tl-step.pending .tl-title {
   color: var(--muted);
